@@ -6,7 +6,8 @@ const Annotation = require('../models/annotationModel');
 const router = express.Router();
 const { Parser } = require('json2csv');
 const ExcelJS = require('exceljs');
-
+const { authenticateToken } = require('./auth');
+const User = require('../models/usersModel'); 
 router.get("/export", async (req, res) => {
   try {
     const { format = "csv" } = req.query;
@@ -35,6 +36,7 @@ router.get("/export", async (req, res) => {
 
       worksheet.columns = [
         { header: 'Annotator_ID', key: 'Annotator_ID', width: 15 },
+        { header: 'user_ID', key: 'user_ID', width: 15 },
         { header: 'Comment', key: 'Comment', width: 30 },
         { header: 'Src_Text', key: 'Src_Text', width: 100 },
         { header: 'Target_Text', key: 'Target_Text', width: 100 },
@@ -71,39 +73,159 @@ router.get("/export", async (req, res) => {
 
 
 // Get all annotations
-router.get('/rebortAnnotation', async (req, res) => {
+router.get('/Allannotation', authenticateToken, async (req, res) => {
   try {
-    const annotations = await Annotation.find();
+    console.log('🧪 Decoded user:', req.user);  // <-- SEE what it contains
+    const userId = req.user.Annotator_ID || req.user.userId || req.user.id;
+    const annotations = await Annotation.find({ Annotator_ID: userId });
     res.status(200).json(annotations);
   } catch (err) {
-    console.error('GET /rebortAnnotation error:', err);
+    console.error('GET /Allannotation error:', err);
+    res.status(500).json({ message: err.message });
+  }
+});
+router.get('/pending', authenticateToken, async (req, res) => {
+  try {
+    const annotatorId = req.user.Annotator_ID;
+
+    const pendingCount = await Annotation.countDocuments({
+      reviewed: false,
+      Annotator_ID: annotatorId,
+    });
+
+    res.status(200).json({ count: pendingCount });
+  } catch (err) {
+    console.error("Error getting pending reviews:", err);
+    res.status(500).json({ message: "Failed to get pending reviews" });
+  }
+});
+router.get('/stats', authenticateToken, async (req, res) => {
+  try {
+    const totalAnnotations = await Annotation.countDocuments();
+    const userCount = await User.countDocuments();
+    const annotationsPerUser = userCount ? Math.round(totalAnnotations / userCount) : 0;
+
+    const last7Days = new Date();
+    last7Days.setDate(last7Days.getDate() - 6);
+
+    const annotationsByDay = await Annotation.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: last7Days },
+        },
+      },
+      {
+        $group: {
+          _id: {
+            $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } // ✅ FIXED
+          },
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
+
+    const errorByDay = await Annotation.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: last7Days },
+        },
+      },
+      {
+        $project: {
+          createdAt: 1,
+          totalErrors: {
+            $add: ["$Omission", "$Addition", "$Mistranslation", "$Untranslation"]
+          },
+        },
+      },
+      {
+        $group: {
+          _id: {
+            $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } // ✅ FIXED
+          },
+          value: { $sum: "$totalErrors" },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
+
+    res.json({
+      totalAnnotations,
+      annotationsPerUser,
+      annotationsByDay,
+      errorByDay,
+    });
+  } catch (error) {
+    console.error("Error in dashboard stats:", error);
+    res.status(500).json({ message: "Failed to load dashboard data." });
+  }
+});
+
+router.get('/mycount', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.Annotator_ID || req.user.userId || req.user.id;
+    const total = await Annotation.countDocuments({ Annotator_ID: userId });
+    res.status(200).json({ total });
+  } catch (err) {
+    console.error('GET /mycount error:', err);
+    res.status(500).json({ message: 'Failed to count your annotations' });
+  }
+});
+// Create a new annotation
+// routes/anotationRoute.js
+
+router.post('/Addannotation', authenticateToken, async (req, res) => {
+  try {
+    const {
+      Comment,
+      Src_Text,
+      Target_Text,
+      Score,
+      Omission,
+      Addition,
+      Mistranslation,
+      Untranslation,
+      Src_Issue,
+      Target_Issue,
+    } = req.body;
+
+    const userId = req.user.Annotator_ID;     // From token
+    const userEmail = req.user.email;   // Include email in your JWT at login
+
+    // Check for duplicates
+    const existing = await Annotation.findOne({
+      Annotator_ID: userId,
+      Src_Text: Src_Text,
+    });
+
+    if (existing) {
+      return res.status(409).json({ message: 'Annotation already exists for this text and user' });
+    }
+
+    const newAnnotation = new Annotation({
+      Annotator_ID: userId,
+      Annotator_Email: userEmail,
+      Src_Text,
+      Target_Text,
+      Comment,
+      Score,
+      Omission,
+      Addition,
+      Mistranslation,
+      Untranslation,
+      Src_Issue,
+      Target_Issue,
+    });
+
+    await newAnnotation.save();
+    res.status(201).json(newAnnotation);
+  } catch (err) {
+    console.error('POST /rebortAnnotation error:', err);
     res.status(500).json({ message: err.message });
   }
 });
 
-// Create a new annotation
-// routes/anotationRoute.js
-
-router.post('/rebortAnnotation', async (req, res) => {
-    try {
-      // Uniqueness on Annotator_ID + Src_Text
-      const existing = await Annotation.findOne({
-        Annotator_ID: req.body.Annotator_ID,
-        Src_Text: req.body.Src_Text
-      });
-  
-      if (existing) {
-        return res.status(409).json({ message: 'Annotation already exists for this text and annotator' });
-      }
-  
-      const annotation = new Annotation(req.body);
-      await annotation.save();
-      res.status(201).json(annotation);
-    } catch (err) {
-      console.error('POST /rebortAnnotation error:', err);
-      res.status(500).json({ message: err.message });
-    }
-  });
   
 // Update an annotation by ID
 router.put('/rebortAnnotation/:id', async (req, res) => {
@@ -123,16 +245,25 @@ router.put('/rebortAnnotation/:id', async (req, res) => {
 });
 
 // Delete an annotation by ID
-router.delete('/rebortAnnotationDelete/:id', async (req, res) => {
+router.delete('/rebortAnnotationDelete/:id', authenticateToken, async (req, res) => {
   try {
+    const annotation = await Annotation.findById(req.params.id);
+
+    if (!annotation) return res.status(404).json({ message: 'Annotation not found' });
+
+    // ✅ Optional: Ensure only owner can delete
+    if (annotation.Annotator_ID !== req.user.Annotator_ID) {
+      return res.status(403).json({ message: 'Unauthorized: Not your annotation' });
+    }
+
     const deleted = await Annotation.findByIdAndDelete(req.params.id);
-    if (!deleted) return res.status(404).json({ message: 'Annotation not found' });
     res.status(200).json(deleted);
   } catch (err) {
     console.error('DELETE /rebortAnnotation/:id error:', err);
     res.status(500).json({ message: err.message });
   }
 });
+
 
 // DELETE all annotations
 router.delete('/deleteAll', async (req, res) => {

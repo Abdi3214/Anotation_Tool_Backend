@@ -5,7 +5,8 @@ const cors = require('cors');
 const connectDB = require('./db');
 const dataRoutes = require('./routes/dataRoutes');
 const annotationRoutes = require('./routes/anotationRoute');
-const usersRoutes = require('./routes/auth');
+const usersRoutes = require('./routes/userRoute');
+const progressRoute = require("./routes/progressRoute")
 
 const app = express();
 
@@ -20,7 +21,7 @@ connectDB();
 app.use('/api/data', dataRoutes);
 app.use('/api/annotation', annotationRoutes);
 app.use('/api/users', usersRoutes);
-
+app.use("/api/progress", progressRoute);
 // Start server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

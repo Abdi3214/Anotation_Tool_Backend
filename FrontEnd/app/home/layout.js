@@ -1,10 +1,18 @@
 'use client'
 import { Download, LayoutDashboard, LogOut, Menu, NotebookPen, SaveAll, UserPen, UsersRound, X } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
+
 export default function HomeLayout({ children }) {
+  const router = useRouter();
   const [collapsed, setCollapsed] = useState(true);
   const toggleCollapsed = () => setCollapsed(c => !c);
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    router.push("/login"); // or wherever your login page is
+  };
   return (
     <div className="container mx-auto space-y-6 mt-4 mb-10">
       <div className="flex flex-col">
@@ -23,9 +31,7 @@ export default function HomeLayout({ children }) {
               </Link>
             </ul>
           </nav>
-          <Link href=".././" className="text-red-600 hover:underline">
-            Log out
-          </Link>
+          
         </header>
         <section className="container mx-auto space-y-6 mt-4 mb-10 ">
           <aside className="w-full border border-gray-200 rounded-lg dark:border-[#0a0a0a] shadow-md flex">
@@ -85,14 +91,14 @@ export default function HomeLayout({ children }) {
                 <UserPen />
                 {!collapsed && <span className="ml-3">Profile</span>}
               </Link>
-              <Link
-                href="./"
+              <button
+                onClick={handleLogout}
                 className="flex items-center w-full hover:bg-gray-200  p-2  hover:rounded-md"
                 title="Log Out"
               >
                 <LogOut />
                 {!collapsed && <span className="ml-3">LogOut</span>}
-              </Link>
+              </button>
             </div>
             <main className="flex-1 p-4">{children}</main>
           </aside>

@@ -6,23 +6,13 @@ import {
   ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
 
-const annotationsData = [
-  { name: "Mon", value: 300 },
-  { name: "Tue", value: 500 },
-  { name: "Wed", value: 700 },
-  { name: "Thu", value: 500 },
-];
-
-const errorsData = [
-  { name: "Mon", value: 100 },
-  { name: "Tue", value: 300 },
-  { name: "Wed", value: 250 },
-  { name: "Thu", value: 450 },
-];
-
 export default function Dashboard({ name }) {
   const router = useRouter();
   const [token, setToken] = useState("");
+  const [totalAnnotations, setTotalAnnotations] = useState(0);
+  const [annotationsPerUser, setAnnotationsPerUser] = useState(0);
+  const [annotationsData, setAnnotationsData] = useState([]);
+  const [errorsData, setErrorsData] = useState([]);
 
   useEffect(() => {
     const t = localStorage.getItem("token");
@@ -32,6 +22,43 @@ export default function Dashboard({ name }) {
       setToken(t);
     }
   }, []);
+
+  useEffect(() => {
+    if (!token) return;
+
+    fetch("http://localhost:5000/api/annotation/stats", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+      .then(res => res.json())
+      .then(data => {
+        setTotalAnnotations(data.totalAnnotations);
+        setAnnotationsPerUser(data.annotationsPerUser);
+
+        // Convert date to weekday name (e.g. "Mon", "Tue")
+        const formatDate = (dateStr) => {
+          const date = new Date(dateStr);
+          return date.toLocaleDateString("en-US", { weekday: "short" });
+        };
+
+        const formattedAnnotations = data.annotationsByDay.map(item => ({
+          name: formatDate(item._id),
+          value: item.count,
+        }));
+
+        const formattedErrors = data.errorByDay.map(item => ({
+          name: formatDate(item._id),
+          value: item.value,
+        }));
+
+        setAnnotationsData(formattedAnnotations);
+        setErrorsData(formattedErrors);
+      })
+      .catch(err => {
+        console.error("Failed to load dashboard data", err);
+      });
+  }, [token]);
 
   return (
     <div className="p-8 space-y-8">
@@ -45,11 +72,11 @@ export default function Dashboard({ name }) {
 
       <section className="flex space-x-16">
         <div className="flex-1 p-6 rounded-lg border border-gray-200 shadow text-center">
-          <p className="text-3xl font-bold">400</p>
+          <p className="text-3xl font-bold">{totalAnnotations}</p>
           <p className="text-sm">Total Annotations</p>
         </div>
         <div className="flex-1 p-6 rounded-lg border border-gray-200 shadow text-center">
-          <p className="text-3xl font-bold">375</p>
+          <p className="text-3xl font-bold">{annotationsPerUser}</p>
           <p className="text-sm">Annotations per user</p>
         </div>
       </section>
@@ -81,11 +108,11 @@ export default function Dashboard({ name }) {
         </div>
       </section>
 
-      <div className="flex justify-end">
+      {/* <div className="flex justify-end">
         <button className="bg-blue-600 hover:bg-blue-500 px-6 py-2 rounded text-white">
           Submit
         </button>
-      </div>
+      </div> */}
     </div>
   );
 }

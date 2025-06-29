@@ -1,12 +1,21 @@
 // ====== app/home/annotation/export/page.js (Front‑End Export Component) ======
 "use client";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function ExportData() {
   const [startDate, setStartDate] = useState("2024-04-01");
   const [endDate, setEndDate] = useState("2024-04-15");
   const [format, setFormat] = useState("CSV");
+  const router = useRouter();
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const user = localStorage.getItem("user");
 
+    if (!token || !user) {
+      router.push("/login");
+    }
+  }, []);
   const handleDownload = async () => {
     const query = `?start=${encodeURIComponent(startDate)}&end=${encodeURIComponent(endDate)}&format=${format.toLowerCase()}`;
     try {

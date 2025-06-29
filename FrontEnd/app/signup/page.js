@@ -51,10 +51,10 @@ const SignUp = () => {
 
       const { token } = await loginRes.json();
 
-      // 3️⃣ Store token and redirect
+      
       localStorage.setItem('token', token);
       const result = await res.json();
-      router.push(`/home?name=${encodeURIComponent(name)}`);
+      router.push(`/home/dashboard?name=${encodeURIComponent(name)}`);
       console.log("Saved user:", result);
 
     } catch (err) {

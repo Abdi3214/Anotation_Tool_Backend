@@ -6,7 +6,13 @@ import { useEffect, useState } from "react";
 export default function UpdateUser() {
   const searchParams = useSearchParams();
   const router = useRouter();
-
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const user = localStorage.getItem("user");
+    if (!token || !user) {
+      router.push("/login");
+    }
+  }, []);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -38,7 +44,6 @@ export default function UpdateUser() {
           body: JSON.stringify(data),
         }
       );
-
       if (!res.ok) {
         const text = await res.text();
         if (res.status === 409) {

@@ -1,7 +1,8 @@
 "use client";
 import { ChevronDown } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-
+import { useStore } from "../../../context/UserContext";
 const Annotation = () => {
   const [currentIndex, setCurrentIndex] = useState(() => {
     if (typeof window !== "undefined") {
@@ -10,7 +11,7 @@ const Annotation = () => {
     }
     return 0;
   });
-
+  const router = useRouter();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -36,30 +37,64 @@ const Annotation = () => {
   const [comment, setComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [selectedSourceText, setSelectedSourceText] = useState("");
+  const [pendingTargetText, setPendingTargetText] = useState("");
+  const [showCategoryOptions, setShowCategoryOptions] = useState(false);
+  const [selectionPosition, setSelectionPosition] = useState({
+    top: 0,
+    left: 0,
+  });
+  const { user } = useStore();
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const user = localStorage.getItem("user");
+
+    if (!token || !user) {
+      router.push("/login");
+    }
+  }, []);
+  
 
   const [savedIndices, setSavedIndices] = useState([]);
-  useEffect(() => {
-    fetchSaved();
-  }, []);
-  const fetchSaved = async () => {
-    try {
-      const res = await fetch(
-        "http://localhost:5000/api/annotation/rebortAnnotation"
-      );
-      const saved = await res.json();
-      // assume each saved annotation has an Annotator_ID field
-      setSavedIndices(saved.map((a) => a.Annotator_ID));
-    } catch (e) {
-      console.error("Failed to load saved annotations:", e);
-    }
-  };
+  // useEffect(() => {
+  //   fetchSaved();
+  // }, []);
+  // const fetchSaved = async () => {
+  //   try {
+  //     const res = await fetch(
+  //       "http://localhost:5000/api/annotation/Addannotation"
+  //     );
+  //     const saved = await res.json();
+  //     // assume each saved annotation has an Annotator_ID field
+  //     setSavedIndices(saved.map((a) => a.Annotator_ID));
+  //   } catch (e) {
+  //     console.error("Failed to load saved annotations:", e);
+  //   }
+  // };
 
   useEffect(() => {
-    if (items.length === 0) return;
-    const all = Array.from({ length: items.length }, (_, i) => i);
-    const missing = all.filter((i) => !savedIndices.includes(i));
-    if (missing.length > 0) setCurrentIndex(missing[0]);
-  }, [items, savedIndices]);
+    const fetchSaved = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch("http://localhost:5000/api/annotation/Allannotation", {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        const saved = await res.json();
+        const savedIdxs = saved
+          .map(a =>
+            items.findIndex(item => item.sourceText === a.Src_Text)
+          )
+          .filter(idx => idx >= 0);
+        setSavedIndices(savedIdxs);
+      } catch (e) {
+        console.error("Failed to load saved annotations:", e);
+      }
+    };
+  
+    if (items.length > 0) fetchSaved();
+  }, [items]);
+  
 
   useEffect(() => {
     const fetchItems = async () => {
@@ -82,6 +117,29 @@ const Annotation = () => {
     };
     fetchItems();
   }, []);
+  useEffect(() => {
+    const fetchProgress = async () => {
+      const token = localStorage.getItem("token");
+      try {
+        const res = await fetch("http://localhost:5000/api/progress", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        const data = await res.json();
+        if (data.index !== undefined && !isNaN(data.index)) {
+          setCurrentIndex(data.index);
+        }
+      } catch (err) {
+        console.error("Failed to load progress:", err);
+      }
+    };
+  
+    if (items.length > 0) {
+      fetchProgress();
+    }
+  }, [items]);
+  
   // localStorage.setItem('totalAnnotations', items.length);
   // only write to localStorage once items have been fetched/updated
   useEffect(() => {
@@ -104,23 +162,102 @@ const Annotation = () => {
     setMounted(true);
   }, []);
 
-  // 4) Save rating to localStorage when it changes (after hydration)
+  
   useEffect(() => {
     if (mounted) {
       localStorage.setItem("meaningRating", rating.toString());
     }
   }, [rating, mounted]);
 
-  // 5) Persist currentIndex to localStorage
+  
   useEffect(() => {
     if (typeof window !== "undefined") {
       localStorage.setItem("annotationIndex", currentIndex.toString());
     }
   }, [currentIndex]);
-  const getNextMissing = () => {
-    const all = Array.from({ length: items.length }, (_, i) => i);
-    const missing = all.filter((i) => !savedIndices.includes(i));
+  const getNextMissing = (savedArr, totalItems) => {
+    const all = Array.from({ length: totalItems }, (_, i) => i);
+    const missing = all.filter((i) => !savedArr.includes(i));
     return missing.length > 0 ? missing[0] : null;
+  };
+  const handleSave = async () => {
+    if (submitting) return;
+    setSubmitting(true);
+  
+    // 1) Prepare counts & payload
+    const counts = countAnnotations();
+    const payload = {
+      Comment: comment,
+      Src_Text: sourceText,
+      Target_Text: targetText,
+      Score: rating,
+      Omission: counts.Omission,
+      Addition: counts.Addition,
+      Mistranslation: counts.Mistranslation,
+      Untranslation: counts.Untranslation,
+      Src_Issue: getTaggedText(sourceText, sourceSelections),
+      Target_Issue: getTaggedText(targetText, targetSelections),
+    };
+  
+    try {
+      const token = localStorage.getItem("token");
+  
+      // 2) Save annotation to backend
+      const res = await fetch("http://localhost:5000/api/annotation/Addannotation", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        if (res.status === 409) {
+          alert("An annotation already exists for this input. Please modify it.");
+        } else {
+          console.error(`Save failed: ${res.status} ${res.statusText} - ${text}`);
+          alert("Failed to save annotation. Please try again.");
+        }
+        return;
+      }
+      await res.json();
+  
+      // 3) Clear UI state
+      clearSelections();
+  
+      // 4) Build the new savedIndices array synchronously
+      const newSaved = [...savedIndices, currentIndex];
+      setSavedIndices(newSaved);
+  
+      // 5) Compute the next index from newSaved
+      const next = getNextMissing(newSaved, items.length);
+  
+      // 6) Advance or finish
+      if (next !== null) {
+        setCurrentIndex(next);
+  
+        // 7) Persist progress to backend
+        await fetch("http://localhost:5000/api/progress", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ index: next }),
+        });
+      } else {
+        alert("🎉 You've completed all annotations!");
+      }
+  
+      // 8) Cleanup
+      setComment("");
+    } catch (err) {
+      console.error("Unexpected error:", err);
+      alert("Something went wrong. Please try again later.");
+    } finally {
+      setSubmitting(false);
+    }
   };
   if (loading) {
     return (
@@ -194,137 +331,240 @@ const Annotation = () => {
     range.setEnd(node, offset);
     return range.toString().length;
   }
+
+
   
-  const handleSelection = (setSelections, text, category = null) => {
-    const selection = window.getSelection();
-    const selectionText = selection.toString().trim();
   
-    if (selectionText && text.includes(selectionText)) {
-      setSelections((prev) => {
-        const sameTextDiffCategory = prev.find(
-          (s) => s.text === selectionText && s.category !== category
-        );
-        const sameTextSameCategory = prev.find(
-          (s) => s.text === selectionText && s.category === category
-        );
-  
-        // If selected already with the same category, deselect it
-        if (sameTextSameCategory) {
-          return prev.filter(
-            (s) => !(s.text === selectionText && s.category === category)
-          );
-        }
-  
-        // Remove previous conflicting annotation for same text
-        let filtered = prev.filter((s) => s.text !== selectionText);
-  
-        const newSelection = { text: selectionText };
-        if (category) newSelection.category = category;
-  
-        if (category === "Mistranslation") {
-          setCurrentMistranslation(newSelection);
-          setIsModalOpen(true);
-        }
-  
-        return [...filtered, newSelection];
-      });
-    }
-  
-    selection.removeAllRanges();
-  };
   
   
   
   
 
-  const handleSourceSelection = () => {
-    const selection = window.getSelection();
-    const selectionText = selection.toString().trim();
-    if (selectionText && sourceText.includes(selectionText)) {
-      const newSelection = {
+  
+  const resetModal = () => {
+    setIsModalOpen(false);
+    setCurrentMistranslation(null);
+    setPendingTargetText("");
+    setShowCategoryOptions(false);
+  };
+  
+  
+  const handleSelection = (setSelections, text, category = null, ref = null) => {
+    try {
+      const selection = window.getSelection();
+      if (!selection || selection.rangeCount === 0) return;
+  
+      const selectedText = selection.toString().trim();
+      if (!selectedText || !ref?.current?.textContent?.includes(selectedText)) {
+        selection.removeAllRanges();
+        return;
+      }
+  
+      const range = selection.getRangeAt(0);
+      const preRange = document.createRange();
+      preRange.selectNodeContents(ref.current);
+      preRange.setEnd(range.startContainer, range.startOffset);
+      const start = preRange.toString().length;
+      const end = start + selectedText.length;
+  
+      if (start === -1 || end > text.length) {
+        selection.removeAllRanges();
+        return;
+      }
+  
+      if (setSelections === setTargetSelections) {
+        setPendingTargetText(selectedText);
+        setShowCategoryOptions(true);
+        const rect = range.getBoundingClientRect();
+        setSelectionPosition({
+          top: rect.bottom + window.scrollY + 10,
+          left: rect.left + window.scrollX,
+        });
+        selection.removeAllRanges();
+        return;
+      }
+  
+      setSelections((prev) => {
+        const alreadyExists = prev.some(
+          (s) => s.start === start && s.end === end && s.category === category
+        );
+        if (alreadyExists) {
+          // Deselect
+          return prev.filter((s) => !(s.start === start && s.end === end && s.category === category));
+        }
+  
+        const overlaps = prev.some(({ start: sStart, end: sEnd }) => {
+          return start < sEnd && end > sStart;
+        });
+  
+        if (overlaps) {
+          // alert(`"${selectedText}" overlaps with an existing selection.`);
+          return prev;
+        }
+  
+        return [...prev, { text: selectedText, category, start, end }];
+      });
+  
+      selection.removeAllRanges();
+    } catch (err) {
+      console.error("Error during text selection:", err);
+      window.getSelection()?.removeAllRanges();
+    }
+  };
+  
+  
+    
+
+
+const handleCategoryConfirm = (cat) => {
+  if (!pendingTargetText) return;
+
+  const start = targetText.indexOf(pendingTargetText);
+  const end = start + pendingTargetText.length;
+
+  const overlaps = targetSelections.some(({ text, start: sStart, end: sEnd }) => {
+    return text !== pendingTargetText && !(end <= sStart || start >= sEnd);
+  });
+
+  if (overlaps) {
+    alert(`"${pendingTargetText}" overlaps with another selection.`);
+    setPendingTargetText("");
+    setShowCategoryOptions(false);
+    return;
+  }
+
+  const existingIndex = targetSelections.findIndex(s => s.text === pendingTargetText);
+  if (existingIndex !== -1) {
+    const existing = targetSelections[existingIndex];
+    if (existing.category === cat) {
+      setTargetSelections(prev => prev.filter((_, i) => i !== existingIndex));
+    } else if (cat === "Mistranslation") {
+      setTargetSelections(prev => prev.filter((_, i) => i !== existingIndex));
+      setIsModalOpen(true);
+      setCurrentMistranslation({ text: pendingTargetText, category: "Mistranslation", start, end });
+    } else {
+      const updated = [...targetSelections];
+      updated[existingIndex] = { text: pendingTargetText, category: cat, start, end };
+      setTargetSelections(updated);
+    }
+  } else {
+    if (cat === "Mistranslation") {
+      setIsModalOpen(true);
+      setCurrentMistranslation({ text: pendingTargetText, category: "Mistranslation", start, end });
+    } else {
+      setTargetSelections(prev => [
+        ...prev,
+        { text: pendingTargetText, category: cat, start, end }
+      ]);
+    }
+  }
+
+  setPendingTargetText("");
+  setShowCategoryOptions(false);
+};
+
+
+const handleSourceSelection = () => {
+  const selection = window.getSelection();
+  const selectionText = selection.toString().trim();
+
+  if (
+    selectionText &&
+    sourceText.includes(selectionText) &&
+    currentMistranslation
+  ) {
+    const existingIndex = sourceSelections.findIndex((s) => s.text === selectionText);
+
+    // ✅ If already selected as source (Omission or other), remove it
+    if (existingIndex !== -1) {
+      const existing = sourceSelections[existingIndex];
+
+      // 🟠 If it's already Mistranslation, treat as deselect (remove both sides)
+      if (existing.category === "Mistranslation") {
+        const linkedTarget = existing.linkedTargetText;
+        setSourceSelections(prev => prev.filter((_, i) => i !== existingIndex));
+        setTargetSelections(prev => prev.filter(t => t.text !== linkedTarget || t.category !== "Mistranslation"));
+        resetModal();
+        return;
+      }
+
+      // 🔄 If it's Omission or any other, just remove it to allow re-assigning
+      setSourceSelections(prev => prev.filter((_, i) => i !== existingIndex));
+    }
+
+    // ✅ Prevent duplicate or overlapping mistranslation target
+    const targetAlreadyLinked = targetSelections.some(
+      (t) =>
+        t.category === "Mistranslation" &&
+        (t.text === currentMistranslation.text ||
+          t.text.includes(currentMistranslation.text) ||
+          currentMistranslation.text.includes(t.text))
+    );
+
+    if (targetAlreadyLinked) {
+      alert("This Mistranslation pair overlaps with an existing one.");
+      resetModal();
+      return;
+    }
+
+    // ✅ Add new mistranslation pair
+    setSourceSelections((prev) => [
+      ...prev,
+      {
         text: selectionText,
         category: "Mistranslation",
         linkedTargetText: currentMistranslation.text,
+      },
+    ]);
+
+    setTargetSelections((prev) => [
+      ...prev,
+      {
+        text: currentMistranslation.text,
+        category: "Mistranslation",
+        linkedSourceText: selectionText,
+        start: currentMistranslation.start,
+        end: currentMistranslation.end,
+      },
+    ]);
+
+    resetModal();
+  }
+
+  selection.removeAllRanges();
+};
+
+
+
+const getClassAndTooltip = (sel) => {
+  if (!sel.category) {
+    return { colorClass: "bg-blue-100 text-blue-800 font-semibold px-1 rounded", tooltipText: "Omission" };
+  }
+
+  switch (sel.category) {
+    case "Addition":
+      return {
+        colorClass: "bg-red-100 text-red-800 font-semibold px-1 rounded",
+        tooltipText: "Addition",
       };
-      setSourceSelections((prev) => [...prev, newSelection]);
-      setIsModalOpen(false);
-      setCurrentMistranslation(null);
-    }
-    selection.removeAllRanges();
-  };
+    case "Untranslation":
+      return {
+        colorClass: "bg-yellow-100 text-yellow-900 font-semibold px-1 rounded",
+        tooltipText: "Untranslation",
+      };
+    case "Mistranslation":
+      return {
+        colorClass: "bg-green-100 text-green-800 font-semibold px-1 rounded",
+        tooltipText: "Mistranslation",
+      };
+    default:
+      return {
+        colorClass: "bg-yellow-100 text-gray-700 font-semibold px-1 rounded",
+        tooltipText: sel.category,
+      };
+  }
+};
 
-  const handleSave = async () => {
-    if (submitting) return;
-    setSubmitting(true);
-    const counts = countAnnotations();
-
-    const payload = {
-      Annotator_ID: currentIndex,
-      Comment: comment,
-      Src_Text: sourceText,
-      Target_Text: targetText,
-      Score: rating,
-      Omission: counts.Omission,
-      Addition: counts.Addition,
-      Mistranslation: counts.Mistranslation,
-      Untranslation: counts.Untranslation,
-      Src_Issue: getTaggedText(sourceText, sourceSelections),
-      Target_Issue: getTaggedText(targetText, targetSelections),
-    };
-    try {
-      const res = await fetch(
-        "http://localhost:5000/api/annotation/rebortAnnotation",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        }
-      );
-
-      if (!res.ok) {
-        const text = await res.text();
-        if (res.status === 409) {
-          alert(
-            "An annotation already exists for this input. Please modify the content or user."
-          );
-        } else {
-          console.error(
-            `Save failed: ${res.status} ${res.statusText} - ${text}`
-          );
-          alert("Failed to save annotation. Please try again.");
-        }
-        return;
-      }
-      const result = await res.json();
-      console.log("Saved annotation:", result);
-      clearSelections();
-      await fetchSaved();
-      const next = getNextMissing();
-      if (next !== null) setCurrentIndex(next);
-      setComment("");
-    } catch (err) {
-      console.error("Unexpected error:", err);
-      alert("Something went wrong. Please try again later.");
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const getClassAndTooltip = (sel) => {
-    if (!sel.category)
-      return { colorClass: "text-blue-500", tooltipText: "Omission" };
-    switch (sel.category) {
-      case "Addition":
-        return { colorClass: "text-red-500", tooltipText: "Addition" };
-      case "Untranslation":
-        return { colorClass: "text-yellow-500", tooltipText: "Untranslation" };
-      case "Mistranslation":
-        return { colorClass: "text-green-500", tooltipText: "Mistranslation" };
-      default:
-        return { colorClass: "text-gray-500", tooltipText: sel.category };
-    }
-  };
-  
   const renderText = (text, selections) => {
     if (!selections.length) return text;
   
@@ -422,16 +662,41 @@ const Annotation = () => {
                 <span ref={sourceRef}>{renderText(sourceText, sourceSelections)}</span>
               </p>
 
-              <select
-                id="category"
-                value={targetCategory}
-                onChange={(e) => setTargetCategory(e.target.value)}
-                className="border rounded p-1"
-              >
-                <option value="Addition">Addition</option>
-                <option value="Untranslation">Untranslation</option>
-                <option value="Mistranslation">Mistranslation</option>
-              </select>
+              {showCategoryOptions && (
+                <div
+                  className="absolute bg-white border rounded shadow p-2 space-y-2 z-50"
+                  style={{
+                    top: `${selectionPosition.top}px`,
+                    left: `${selectionPosition.left}px`,
+                  }}
+                >
+                  <p className="text-sm font-semibold">Choose category:</p>
+                  <label className="flex items-center space-x-1">
+                    <input
+                      type="radio"
+                      name="category"
+                      onChange={() => handleCategoryConfirm("Addition")}
+                    />
+                    <span>Addition</span>
+                  </label>
+                  <label className="flex items-center space-x-1">
+                    <input
+                      type="radio"
+                      name="category"
+                      onChange={() => handleCategoryConfirm("Untranslation")}
+                    />
+                    <span>Untranslation</span>
+                  </label>
+                  <label className="flex items-center space-x-1">
+                    <input
+                      type="radio"
+                      name="category"
+                      onChange={() => handleCategoryConfirm("Mistranslation")}
+                    />
+                    <span>Mistranslation</span>
+                  </label>
+                </div>
+              )}
 
               <p
                 onMouseUp={() =>
@@ -521,6 +786,7 @@ const Annotation = () => {
           </div>
           {/* Comments & Submit */}
           <textarea
+          value={comment}
             onChange={(e) => {
               setComment(e.target.value);
             }}

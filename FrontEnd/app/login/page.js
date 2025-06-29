@@ -2,12 +2,13 @@
 import axios from "axios";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useStore } from "../../context/UserContext";
 
 export default function Login() {
   const [form, setForm] = useState({ email: "", password: "" });
   const [message, setMessage] = useState("");
   const router = useRouter();
-
+  const { setUser } = useStore(); 
   const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
 
@@ -19,7 +20,15 @@ export default function Login() {
         form
       );
       localStorage.setItem("token", res.data.token);
-      router.push("/home/dashboard");
+      localStorage.setItem("user", JSON.stringify(res.data.user));
+      setUser(res.data.user)
+      if (res.data.user.userType === "Admin") {
+        router.push("/home/dashboard");
+      } else {
+        router.push("/");
+      }
+
+    
     } catch (err) {
       setMessage(err.response?.data?.error || "Login failed");
     }

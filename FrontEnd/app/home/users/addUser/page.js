@@ -1,11 +1,18 @@
 'use client'
 import { useRouter } from 'next/navigation';
-import { useState } from "react";
+import { useEffect, useState } from "react";
 function AddUser() {
   const [name, setName] = useState([])
   const [email, setEmail] = useState([])
   const [password, setPassword] = useState([])
   const router = useRouter();
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const user = localStorage.getItem("user");
+    if (!token || !user) {
+      router.push("/login");
+    }
+  }, []);
   const handleSubmit = async (e) => {
     e.preventDefault();
     const data = {

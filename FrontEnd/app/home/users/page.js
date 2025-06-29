@@ -1,18 +1,52 @@
 "use client";
 import { Pencil, UserRoundPlus } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from "next/navigation"; // ✅ Make sure this is imported
 import { Trash } from 'phosphor-react';
 import { useEffect, useState } from "react";
+
 export default function Users() {
-  const [users, setUsers] = useState([])
+  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const router = useRouter(); 
+
   useEffect(() => {
+    const token = localStorage.getItem("token");
+    const userStr = localStorage.getItem("user");
+  
+    if (!token || !userStr) {
+      router.push("/login");
+      return;
+    }
+  
+    const user = JSON.parse(userStr);
+    if (user.userType !== "Admin") {
+      router.push("/"); // Redirect if not Admin
+      return;
+    }
+  
     fetchUsers();
   }, []);
+  
+  
+
   const fetchUsers = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/users/usersAll");
-      if (!res.ok) throw new Error("Network response was not ok");
+      const token = localStorage.getItem("token");
+      const res = await fetch("http://localhost:5000/api/users/usersAll", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+      });
+
+      if (res.status === 401 || res.status === 403) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        router.push("/login");
+        return;
+      }
       const data = await res.json();
       const mapped = data.map((user) => ({
         id: user.Annotator_ID,
@@ -25,11 +59,14 @@ export default function Users() {
       setUsers(mapped);
     } catch (err) {
       console.error(err);
-      setError(err);
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
   useEffect(() => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('totalUsers', users.length);
