@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 
 const usersSchema = new mongoose.Schema(
   {
-    Annotator_ID: { type: Number, required: true },
+    Annotator_ID: { type: Number, unique: true },
     name: { type: String, required: true, unique: true }, // 👈 Add unique: true here
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },

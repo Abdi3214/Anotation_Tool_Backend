@@ -105,55 +105,63 @@ export default function SavedAnnotations() {
   };
 
   const SkeletonCard = () => (
-    <div className="border p-4 flex items-center justify-between border-gray-200 shadow-md rounded-sm animate-pulse">
-      <div className="flex items-center gap-3 w-full">
-        <div className="bg-gray-300 w-8 h-8 rounded-full"></div>
-        <div className="flex-1 h-4 bg-gray-300 rounded w-3/4"></div>
-      </div>
-    </div>
+    <div className="border p-4 flex items-center justify-between border-gray-200 dark:border-gray-700 shadow-md rounded-md animate-pulse bg-white dark:bg-[#0a0a0a]">
+  <div className="flex items-center gap-4 w-full">
+    <div className="bg-gray-300 dark:bg-gray-600 w-10 h-10 rounded-full" />
+    <div className="flex-1 h-4 bg-gray-300 dark:bg-gray-600 rounded w-3/4" />
+  </div>
+</div>
+
   );
 
   return (
-    <div className="p-4">
-      <div className="flex gap-4 mb-4">
-        {!loading && annotations.length > 0 && (
-          <button
-            onClick={handleDeleteAll}
-            className="bg-red-600 text-white px-4 py-2 rounded cursor-pointer"
-          >
-            Delete All
-          </button>
-        )}
-      </div>
+    <div className="p-4 max-w-7xl mx-auto">
+  {/* Delete Button */}
+  <div className="flex justify-end mb-4">
+    {!loading && annotations.length > 0 && (
+      <button
+        onClick={handleDeleteAll}
+        className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md shadow transition"
+      >
+        Delete All
+      </button>
+    )}
+  </div>
 
-      <div className="space-y-4 h-screen p-2 overflow-auto">
-        {loading
-          ? Array.from({ length: 5 }).map((_, i) => <SkeletonCard key={i} />)
-          : annotations.length > 0
-            ? annotations.map((item) => (
-                <div
-                  key={item._id}
-                  className="border p-4 flex items-center justify-between border-gray-200 shadow-md rounded-sm"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="bg-gray-200 w-12 flex items-center justify-center h-12 text-sm  rounded-full">
-                      {typeof item.Annotator_ID === "number"
-                        ? item.Annotator_ID + 1
-                        : item.Annotator_ID}
-                    </div>
-                    {item.Src_Text} - Score: {item.Score}
-                  </div>
-                  <Trash
-                    className="cursor-pointer"
-                    onClick={() => handleDelete(item._id)}
-                    size={24}
-                    color="#ff0000"
-                  />
-                </div>
-              ))
-            : <p className="text-gray-500">No saved annotations.</p>
-        }
-      </div>
-    </div>
+  {/* Annotation List */}
+  <div className="space-y-4 h-[calc(100vh-150px)] overflow-auto p-2 bg-white dark:bg-[#0a0a0a] rounded-md shadow-inner">
+    {loading ? (
+      Array.from({ length: 5 }).map((_, i) => <SkeletonCard key={i} />)
+    ) : annotations.length > 0 ? (
+      annotations.map((item) => (
+        <div
+          key={item._id}
+          className="border border-gray-200 dark:border-gray-700 p-4 flex items-center justify-between shadow-md rounded-md bg-white dark:bg-gray-900"
+        >
+          <div className="flex items-center gap-4 text-sm sm:text-base text-gray-800 dark:text-gray-100">
+            <div className="w-12 h-12 flex items-center justify-center rounded-full bg-gray-200 dark:bg-gray-700 font-semibold">
+              {typeof item.Annotator_ID === "number"
+                ? item.Annotator_ID + 1
+                : item.Annotator_ID}
+            </div>
+            <div className="flex flex-col">
+              <span className="font-medium truncate max-w-xs">{item.Src_Text}</span>
+              <span className="text-gray-500 dark:text-gray-400">Score: {item.Score}</span>
+            </div>
+          </div>
+          <Trash
+            className="cursor-pointer hover:scale-105 transition"
+            onClick={() => handleDelete(item._id)}
+            size={24}
+            color="#ff0000"
+          />
+        </div>
+      ))
+    ) : (
+      <p className="text-gray-500 dark:text-gray-400 text-center mt-12">No saved annotations.</p>
+    )}
+  </div>
+</div>
+
   );
 }

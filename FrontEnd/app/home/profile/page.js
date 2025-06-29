@@ -88,106 +88,121 @@ export default function Profile() {
       : 0;
   if (!user)
     return (
-      <div className="dark:bg-[#0a0a0a] p-6 animate-pulse">
-        <div className="flex items-center space-x-4 mb-6">
-          <div className="w-16 h-16 rounded-full bg-gray-300"></div>
-          <div className="space-y-2">
-            <div className="w-40 h-5 bg-gray-300 rounded"></div>
-            <div className="w-48 h-4 bg-gray-300 rounded"></div>
-            <div className="w-32 h-3 bg-gray-300 rounded"></div>
-          </div>
-        </div>
+      <div className="animate-pulse p-6 bg-white dark:bg-[#0a0a0a] max-w-full mx-auto">
+  {/* Header */}
+  <div className="flex flex-col sm:flex-row items-center sm:space-x-4 mb-6">
+    <div className="w-24 h-24 sm:w-16 sm:h-16 rounded-full bg-gray-200 dark:bg-gray-700" />
+    <div className="mt-4 sm:mt-0 space-y-2 flex-1">
+      <div className="w-3/4 sm:w-40 h-5 bg-gray-200 dark:bg-gray-700 rounded" />
+      <div className="w-4/5 sm:w-48 h-4 bg-gray-200 dark:bg-gray-700 rounded" />
+      <div className="w-1/2 sm:w-32 h-3 bg-gray-200 dark:bg-gray-700 rounded" />
+    </div>
+  </div>
 
-        <div className="space-y-6">
-          <div className="flex justify-between">
-            <div className="w-40 h-4 bg-gray-300 rounded"></div>
-            <div className="w-10 h-4 bg-gray-300 rounded"></div>
-          </div>
-          <div className="flex justify-between">
-            <div className="w-40 h-4 bg-gray-300 rounded"></div>
-            <div className="w-6 h-4 bg-gray-300 rounded"></div>
-          </div>
+  {/* Two‑column stats */}
+  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
+    <div className="flex justify-between">
+      <div className="w-3/5 md:w-2/5 h-4 bg-gray-200 dark:bg-gray-700 rounded" />
+      <div className="w-1/6 h-4 bg-gray-200 dark:bg-gray-700 rounded" />
+    </div>
+    <div className="flex justify-between">
+      <div className="w-2/3 md:w-1/2 h-4 bg-gray-200 dark:bg-gray-700 rounded" />
+      <div className="w-1/5 h-4 bg-gray-200 dark:bg-gray-700 rounded" />
+    </div>
+  </div>
 
-          <div>
-            <div className="w-24 h-4 bg-gray-300 rounded mb-2"></div>
-            <div className="w-full h-2 bg-gray-300 rounded-full">
-              <div className="w-2/3 h-2 bg-gray-400 rounded-full"></div>
-            </div>
-            <div className="w-10 h-3 bg-gray-300 rounded mt-2 ml-auto"></div>
-          </div>
+  {/* Progress bar */}
+  <div className="mb-6">
+    <div className="w-1/3 sm:w-1/4 h-4 bg-gray-200 dark:bg-gray-700 rounded mb-2" />
+    <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+      <div className="w-2/3 h-2 bg-gray-300 dark:bg-gray-600 rounded-full" />
+    </div>
+    <div className="w-1/6 h-3 bg-gray-200 dark:bg-gray-700 rounded mt-2 ml-auto" />
+  </div>
 
-          <div>
-            <div className="w-32 h-4 bg-gray-300 rounded mb-2"></div>
-            <ul className="space-y-2">
-              <li className="w-3/4 h-3 bg-gray-300 rounded"></li>
-              <li className="w-2/3 h-3 bg-gray-300 rounded"></li>
-              <li className="w-1/2 h-3 bg-gray-300 rounded"></li>
-            </ul>
-          </div>
+  {/* List section */}
+  <div className="mb-6">
+    <div className="w-1/4 sm:w-32 h-4 bg-gray-200 dark:bg-gray-700 rounded mb-2" />
+    <ul className="space-y-2">
+      <li className="w-3/4 sm:w-2/3 h-3 bg-gray-200 dark:bg-gray-700 rounded" />
+      <li className="w-2/3 sm:w-1/2 h-3 bg-gray-200 dark:bg-gray-700 rounded" />
+      <li className="w-1/2 sm:w-1/3 h-3 bg-gray-200 dark:bg-gray-700 rounded" />
+    </ul>
+  </div>
 
-          <div className="flex space-x-4 mt-6">
-            <div className="w-32 h-10 bg-gray-300 rounded"></div>
-            <div className="w-40 h-10 bg-gray-300 rounded"></div>
-          </div>
-        </div>
-      </div>
+  {/* Buttons */}
+  <div className="flex flex-col sm:flex-row sm:space-x-4 space-y-4 sm:space-y-0">
+    <div className="w-full sm:w-1/3 h-10 bg-gray-200 dark:bg-gray-700 rounded" />
+    <div className="w-full sm:w-1/2 h-10 bg-gray-200 dark:bg-gray-700 rounded" />
+  </div>
+</div>
+
     );
 
   return (
-    <div className="dark:bg-[#0a0a0a;] p-6 ">
-      <div className="flex items-center space-x-4 mb-6">
-        <div className="w-16 h-16 rounded-full bg-gray-200"></div>
-        <div>
-          <h2 className="text-xl font-bold">{user?.name || "Anonymous"}</h2>
-          <p className="text-gray-600">{user?.email || "Not Available"}</p>
-          <p className="text-sm text-gray-400">Joined: {formattedDate}</p>
-        </div>
-      </div>
-
-      <div className="space-y-6">
-        <div className="flex justify-between">
-          <p>Completed Annotations</p>
-          <span className="font-medium">{completedAnnotations}</span>
-        </div>
-        <div className="flex justify-between">
-          <p>Pending Reviews</p>
-          <span className="font-medium">{pendingReviews}</span>
-        </div>
-        <div>
-          <p className="mb-1">Progress</p>
-          <div className="w-full h-2 bg-gray-200 rounded-full">
-            <div
-              className="h-2 bg-blue-600 rounded-full"
-              style={{ width: `${progressPercentage}%` }}
-            ></div>
-          </div>
-          <p className="text-sm text-right text-gray-500 mt-1">
-            {progressPercentage}%
-          </p>
-        </div>
-        <div>
-          <h3 className="font-semibold mb-2">Recent Activity</h3>
-          <ul className="text-sm space-y-1">
-            <li>
-              <strong>April 16:</strong> Annotated Text ID 2374
-            </li>
-            <li>
-              <strong>April 15:</strong> Commented on ID 2369
-            </li>
-            <li>
-              <strong>April 13:</strong> Reviewed 5 texts
-            </li>
-          </ul>
-        </div>
-        <div className="flex space-x-4 mt-6">
-          <button className="btn btn-primary px-4 py-2 border rounded hover:bg-gray-100 border-gray-200 shadow-sm">
-            Edit Profile
-          </button>
-          <button className="btn btn-primary px-4 py-2 border rounded border-gray-200 hover:bg-gray-100 shadow-sm">
-            Change Password
-          </button>
-        </div>
-      </div>
+    <div className="p-6 bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-gray-100 rounded-xl shadow-md max-w-6xl mx-auto">
+  {/* Header Section */}
+  <div className="flex flex-col sm:flex-row items-center sm:space-x-4 mb-6">
+    <div className="w-24 h-24 sm:w-16 sm:h-16 rounded-full bg-gray-200 dark:bg-gray-700" />
+    <div className="mt-4 sm:mt-0 text-center sm:text-left">
+      <h2 className="text-xl font-bold">{user?.name || "Anonymous"}</h2>
+      <p className="text-gray-600 dark:text-gray-400">{user?.email || "Not Available"}</p>
+      <p className="text-sm text-gray-500 dark:text-gray-500">Joined: {formattedDate}</p>
     </div>
+  </div>
+
+  {/* Stats Section */}
+  <div className="space-y-6 text-sm sm:text-base">
+    <div className="flex justify-between">
+      <p>Completed Annotations</p>
+      <span className="font-medium">{completedAnnotations}</span>
+    </div>
+    <div className="flex justify-between">
+      <p>Pending Reviews</p>
+      <span className="font-medium">{pendingReviews}</span>
+    </div>
+
+    {/* Progress Bar */}
+    <div>
+      <p className="mb-1 font-medium">Progress</p>
+      <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+        <div
+          className="h-2 bg-blue-600 rounded-full transition-all duration-300"
+          style={{ width: `${progressPercentage}%` }}
+        ></div>
+      </div>
+      <p className="text-sm text-right text-gray-500 dark:text-gray-400 mt-1">
+        {progressPercentage}%
+      </p>
+    </div>
+
+    {/* Recent Activity */}
+    <div>
+      <h3 className="font-semibold mb-2">Recent Activity</h3>
+      <ul className="space-y-1 text-sm">
+        <li>
+          <strong>April 16:</strong> Annotated Text ID 2374
+        </li>
+        <li>
+          <strong>April 15:</strong> Commented on ID 2369
+        </li>
+        <li>
+          <strong>April 13:</strong> Reviewed 5 texts
+        </li>
+      </ul>
+    </div>
+
+    {/* Action Buttons */}
+    <div className="flex flex-col sm:flex-row sm:space-x-4 space-y-3 sm:space-y-0 mt-6">
+      <button className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition">
+        Edit Profile
+      </button>
+      <button className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition">
+        Change Password
+      </button>
+    </div>
+  </div>
+</div>
+
   );
 }

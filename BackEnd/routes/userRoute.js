@@ -22,32 +22,44 @@ router.get('/usersAll',
 // routes/anotationRoute.js
 
 router.post("/addUsers", async (req, res) => {
-  const { Annotator_ID, name, email, password, userType } = req.body;
-  try {
-    // Uniqueness on Annotator_ID + Src_Text
-    const existing = await Users.findOne({
-      email: req.body.email,
-    });
+  const { name, email, password, userType } = req.body;
 
+  try {
+    // Check for existing email
+    const existing = await Users.findOne({ email });
     if (existing) {
       return res
         .status(409)
-        .json({ message: "Users already exists for this text and annotator" });
+        .json({ message: "A user with that email already exists." });
     }
+
+    // Hash the password
     const hashed = await bcrypt.hash(password, 10);
-    const users = await Users.create({
-      Annotator_ID,
+
+    // Create and save the user (this triggers your pre('save') hook!)
+    const user = new Users({
       name,
       email,
       password: hashed,
       userType,
     });
-    res.status(201).json(users);
+    await user.save();
+
+    // Generate a token now that Annotator_ID exists
+    const token = jwt.sign(
+      { Annotator_ID: user.Annotator_ID, email: user.email, userType: user.userType },
+      process.env.JWT_SECRET,
+      { expiresIn: "1d" }
+    );
+
+    // Send back the new user and token
+    res.status(201).json({ user, token });
   } catch (err) {
     console.error("POST /users error:", err);
     res.status(500).json({ message: err.message });
   }
 });
+
 
 
 

@@ -1,45 +1,46 @@
 "use client";
-import { Pencil, UserRoundPlus } from 'lucide-react';
-import Link from 'next/link';
+import { Pencil, UserRoundPlus } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation"; // ✅ Make sure this is imported
-import { Trash } from 'phosphor-react';
+import { Trash } from "phosphor-react";
 import { useEffect, useState } from "react";
 
 export default function Users() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const router = useRouter(); 
+  const router = useRouter();
 
   useEffect(() => {
     const token = localStorage.getItem("token");
     const userStr = localStorage.getItem("user");
-  
+
     if (!token || !userStr) {
       router.push("/login");
       return;
     }
-  
+
     const user = JSON.parse(userStr);
     if (user.userType !== "Admin") {
       router.push("/"); // Redirect if not Admin
       return;
     }
-  
+
     fetchUsers();
   }, []);
-  
-  
 
   const fetchUsers = async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("https://anotationtoolbackend-production.up.railway.app/api/users/usersAll", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
-      });
+      const res = await fetch(
+        "https://anotationtoolbackend-production.up.railway.app/api/users/usersAll",
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       if (res.status === 401 || res.status === 403) {
         localStorage.removeItem("token");
@@ -68,15 +69,18 @@ export default function Users() {
     fetchUsers();
   }, []);
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('totalUsers', users.length);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("totalUsers", users.length);
     }
   }, [users]);
   const handleDelete = async (id) => {
-    try{
-      const res = await fetch(`https://anotationtoolbackend-production.up.railway.app/api/users/deleteUser/${id}`, {
-        method: "DELETE"
-      })
+    try {
+      const res = await fetch(
+        `https://anotationtoolbackend-production.up.railway.app/api/users/deleteUser/${id}`,
+        {
+          method: "DELETE",
+        }
+      );
       if (!res.ok) {
         const errorText = await res.text();
         console.error(`Delete failed: ${res.status} - ${errorText}`);
@@ -84,101 +88,128 @@ export default function Users() {
         return;
       }
       fetchUsers();
-    }catch(err){
+    } catch (err) {
       console.error("Unexpected error:", err);
       alert("Something went wrong.");
     }
-  }
+  };
 
   const TableSkeleton = ({ rows = 6 }) => {
     return (
-      <table className="table w-full">
-        <thead>
-          <tr>
-            <th>
-              <div className="h-4 bg-gray-300 rounded w-1/2 animate-pulse"></div>
-            </th>
-            <th>
-              <div className="h-4 bg-gray-300 rounded w-3/4 animate-pulse"></div>
-            </th>
-            <th>
-              <div className="h-4 bg-gray-300 rounded w-3/4 animate-pulse"></div>
-            </th>
-            <th>
-              <div className="h-4 bg-gray-300 rounded w-1/3 animate-pulse"></div>
-            </th>
-            <th>
-              <div className="h-4 bg-gray-300 rounded w-1/3 animate-pulse"></div>
-            </th>
-            <th>
-              <div className="h-4 bg-gray-300 rounded w-1/3 animate-pulse"></div>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {[...Array(rows)].map((_, rowIdx) => (
-            <tr key={rowIdx} className="animate-pulse">
-              <td>
-                <div className="h-4 bg-gray-200 rounded w-full"></div>
-              </td>
-              <td>
-                <div className="h-4 bg-gray-200 rounded w-full"></div>
-              </td>
-              <td>
-                <div className="h-4 bg-gray-200 rounded w-full"></div>
-              </td>
-              <td>
-                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-              </td>
-              <td>
-                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-              </td>
-              <td>
-                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-              </td>
+      <div className="overflow-x-auto">
+        <table className="min-w-full table-auto border-separate border-spacing-y-2">
+          <thead>
+            <tr className="text-left">
+              {Array(6)
+                .fill(0)
+                .map((_, idx) => (
+                  <th key={idx} className="px-4 py-2">
+                    <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-[70%] animate-pulse"></div>
+                  </th>
+                ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {Array(rows)
+              .fill(0)
+              .map((_, rowIdx) => (
+                <tr key={rowIdx} className="animate-pulse">
+                  {Array(6)
+                    .fill(0)
+                    .map((_, cellIdx) => (
+                      <td key={cellIdx} className="px-4 py-2">
+                        <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
+                      </td>
+                    ))}
+                </tr>
+              ))}
+          </tbody>
+        </table>
+      </div>
     );
   };
-  
+
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-semibold mb-4">Users</h1>
-      <div className="overflow-x-auto border-base-content/5 bg-base-10 ">
-      {loading ? (
-        <TableSkeleton rows={10} />
-      ) : (
-      <table className="table w-full">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Name</th>
-            <th>Email</th>
-            <th>Type</th>
-            <th>Edit</th>
-            <th>Delete</th>
-          </tr>
-        </thead>
-        <tbody>
-          {users.map((user) => (
-            <tr key={user.id} className="hover">
-              <td>{user.id}</td>
-              <td>{user.name}</td>
-              <td>{user.email}</td>
-              <td>{user.type}</td>
-              <td><Link href={{ pathname: './users/updateUser', query: {id: user._id, name: user.name, email: user.email, password: user.password, type: user.type}}}><Pencil className='cursor-pointer' /></Link></td>
-              <td><Trash className='cursor-pointer' onClick={() => {
-                handleDelete(user._id)
-              }} size={24} color="#ff0000" /></td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    )}
-    </div>
-    <Link href="./users/addUser" className='btn bg-rose-700 hover:bg-rose-500  text-white mt-4 rounded'><UserRoundPlus /> Add User</Link>
+      <h1 className="text-2xl font-semibold mb-4 text-gray-800 dark:text-white">
+        Users
+      </h1>
+
+      <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#0a0a0a]">
+        {loading ? (
+          <TableSkeleton rows={10} />
+        ) : (
+          <table className="min-w-full text-sm text-left">
+            <thead className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
+              <tr>
+                <th className="px-4 py-3">ID</th>
+                <th className="px-4 py-3">Name</th>
+                <th className="px-4 py-3">Email</th>
+                <th className="px-4 py-3">Type</th>
+                <th className="px-4 py-3">Edit</th>
+                <th className="px-4 py-3">Delete</th>
+              </tr>
+            </thead>
+            <tbody>
+              {users.map((user) => (
+                <tr
+                  key={user.id}
+                  className="border-t border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
+                >
+                  <td className="px-4 py-3 text-gray-700 dark:text-gray-200">
+                    {user.id}
+                  </td>
+                  <td className="px-4 py-3 text-gray-700 dark:text-gray-200">
+                    {user.name}
+                  </td>
+                  <td className="px-4 py-3 text-gray-700 dark:text-gray-200">
+                    {user.email}
+                  </td>
+                  <td className="px-4 py-3 capitalize text-gray-700 dark:text-gray-200">
+                    {user.type}
+                  </td>
+                  <td className="px-4 py-3">
+                    <Link
+                      href={{
+                        pathname: "./users/updateUser",
+                        query: {
+                          id: user._id,
+                          name: user.name,
+                          email: user.email,
+                          password: user.password,
+                          type: user.type,
+                        },
+                      }}
+                      className="inline-flex items-center text-blue-600 dark:text-blue-400 hover:underline"
+                    >
+                      <Pencil className="cursor-pointer" size={18} />
+                    </Link>
+                  </td>
+                  <td className="px-4 py-3">
+                    <button onClick={() => handleDelete(user._id)}>
+                      <Trash
+                        className="cursor-pointer"
+                        size={20}
+                        color="#ef4444"
+                        title="Delete user"
+                      />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      <div className="mt-6">
+        <Link
+          href="./users/addUser"
+          className="inline-flex items-center gap-2 bg-rose-700 hover:bg-rose-600 text-white font-medium px-4 py-2 rounded-md transition"
+        >
+          <UserRoundPlus size={18} /> Add User
+        </Link>
+      </div>
     </div>
   );
 }

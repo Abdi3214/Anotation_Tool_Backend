@@ -64,48 +64,72 @@ const SignUp = () => {
   };
 
   return (
-    <div className='container flex justify-center mx-auto my-8'>
-      <div className='w-2xl flex justify-center p-4 border border-gray-200 shadow-sm rounded-lg'>
-        <div className='h-full w-full pt-2'>
-          <form onSubmit={handleSubmit} className='flex flex-col mx-12 space-y-6 justify-center'>
-            <Image className='w-12 h-12 rounded-3xl' src={logo} alt="Logo" />
-            <h1 className='text-3xl font-medium'>Sign in to your account</h1>
-            <label>Full Name:</label>
-            <input
-              onChange={(e) => setName(e.target.value)}
-              className='border focus:outline-none border-gray-200 p-2 rounded-lg'
-              type="text"
-              required
-            />
-            <label>Email Address</label>
-            <input
-              onChange={(e) => setEmail(e.target.value)}
-              className='border focus:outline-none border-gray-200 p-2 rounded-lg'
-              type="text"
-              required
-            />
-            <label>Password</label>
-            <input
-              onChange={(e) => setPassword(e.target.value)}
-              className='border focus:outline-none border-gray-300 p-2 rounded-lg'
-              type="password"
-              required
-            />
-            <div className='flex justify-between'>
-              <div className='space-x-3'>
-                <input type="checkbox" />
-                <span>Remember me</span>
-              </div>
-              <a href="#" className='text-blue-700 hover:text-blue-500 hover:underline'>Forgot password?</a>
-            </div>
-            <button type="submit" className='bg-blue-700 p-2 text-center rounded-lg text-white hover:bg-blue-600 font-bold text-lg'>
-              Sign in
-            </button>
-            <a href="/login" className='text-center text-blue-700 hover:text-blue-500 hover:underline'>Already have an account</a>
-          </form>
-        </div>
+    <div className="flex justify-center items-center min-h-screen bg-gray-50 dark:bg-[#0a0a0a] px-4">
+  <div className="w-full max-w-md p-6 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 shadow-md">
+    <form onSubmit={handleSubmit} className="flex flex-col space-y-5">
+      <Image className="w-12 h-12 rounded-3xl mx-auto" src={logo} alt="Logo" />
+
+      <h1 className="text-2xl font-semibold text-center text-gray-800 dark:text-white">
+        Sign in to your account
+      </h1>
+
+      <div>
+        <label className="text-sm text-gray-600 dark:text-gray-300">Full Name</label>
+        <input
+          type="text"
+          required
+          onChange={(e) => setName(e.target.value)}
+          className="mt-1 w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
       </div>
-    </div>
+
+      <div>
+        <label className="text-sm text-gray-600 dark:text-gray-300">Email Address</label>
+        <input
+          type="email"
+          required
+          onChange={(e) => setEmail(e.target.value)}
+          className="mt-1 w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+
+      <div>
+        <label className="text-sm text-gray-600 dark:text-gray-300">Password</label>
+        <input
+          type="password"
+          required
+          onChange={(e) => setPassword(e.target.value)}
+          className="mt-1 w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+
+      <div className="flex justify-between items-center text-sm text-gray-600 dark:text-gray-400">
+        <label className="inline-flex items-center space-x-2">
+          <input type="checkbox" className="form-checkbox" />
+          <span>Remember me</span>
+        </label>
+        <a href="#" className="text-blue-600 dark:text-blue-400 hover:underline">
+          Forgot password?
+        </a>
+      </div>
+
+      <button
+        type="submit"
+        className="w-full bg-blue-700 hover:bg-blue-600 text-white font-semibold py-2 rounded-lg transition"
+      >
+        Sign in
+      </button>
+
+      <a
+        href="/login"
+        className="text-center text-sm text-blue-700 dark:text-blue-400 hover:underline"
+      >
+        Already have an account?
+      </a>
+    </form>
+  </div>
+</div>
+
   );
 };
 

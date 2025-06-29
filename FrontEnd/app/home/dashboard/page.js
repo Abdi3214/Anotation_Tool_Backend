@@ -1,9 +1,16 @@
-'use client';
+"use client";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
-  Bar, BarChart, CartesianGrid, Line, LineChart,
-  ResponsiveContainer, Tooltip, XAxis, YAxis,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
 } from "recharts";
 
 export default function Dashboard({ name }) {
@@ -26,13 +33,16 @@ export default function Dashboard({ name }) {
   useEffect(() => {
     if (!token) return;
 
-    fetch("https://anotationtoolbackend-production.up.railway.app/api/annotation/stats", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    })
-      .then(res => res.json())
-      .then(data => {
+    fetch(
+      "https://anotationtoolbackend-production.up.railway.app/api/annotation/stats",
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    )
+      .then((res) => res.json())
+      .then((data) => {
         setTotalAnnotations(data.totalAnnotations);
         setAnnotationsPerUser(data.annotationsPerUser);
 
@@ -42,12 +52,12 @@ export default function Dashboard({ name }) {
           return date.toLocaleDateString("en-US", { weekday: "short" });
         };
 
-        const formattedAnnotations = data.annotationsByDay.map(item => ({
+        const formattedAnnotations = data.annotationsByDay.map((item) => ({
           name: formatDate(item._id),
           value: item.count,
         }));
 
-        const formattedErrors = data.errorByDay.map(item => ({
+        const formattedErrors = data.errorByDay.map((item) => ({
           name: formatDate(item._id),
           value: item.value,
         }));
@@ -55,64 +65,78 @@ export default function Dashboard({ name }) {
         setAnnotationsData(formattedAnnotations);
         setErrorsData(formattedErrors);
       })
-      .catch(err => {
+      .catch((err) => {
         console.error("Failed to load dashboard data", err);
       });
   }, [token]);
 
   return (
-    <div className="p-8 space-y-8">
+    <div className="p-4 sm:p-6 md:p-8 space-y-8 bg-white dark:bg-gray-900 min-h-screen">
       <header className="flex justify-between items-center">
-        <h1 className="text-3xl font-semibold">Dashboard</h1>
-        <div className="flex items-center gap-2">
+        <h1 className="text-2xl sm:text-3xl font-semibold text-gray-800 dark:text-white">
+          Dashboard
+        </h1>
+        <div className="flex items-center gap-2 text-gray-800 dark:text-gray-100">
           <span>{name}</span>
           <div className="bg-gray-500 w-8 h-8 rounded-full" />
         </div>
       </header>
 
-      <section className="flex space-x-16">
-        <div className="flex-1 p-6 rounded-lg border border-gray-200 shadow text-center">
-          <p className="text-3xl font-bold">{totalAnnotations}</p>
-          <p className="text-sm">Total Annotations</p>
+      <section className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="p-6 rounded-lg border border-gray-200 dark:border-gray-700 shadow text-center bg-white dark:bg-gray-800">
+          <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">
+            {totalAnnotations}
+          </p>
+          <p className="text-sm text-gray-500 dark:text-gray-300">
+            Total Annotations
+          </p>
         </div>
-        <div className="flex-1 p-6 rounded-lg border border-gray-200 shadow text-center">
-          <p className="text-3xl font-bold">{annotationsPerUser}</p>
-          <p className="text-sm">Annotations per user</p>
+        <div className="p-6 rounded-lg border border-gray-200 dark:border-gray-700 shadow text-center bg-white dark:bg-gray-800">
+          <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">
+            {annotationsPerUser}
+          </p>
+          <p className="text-sm text-gray-500 dark:text-gray-300">
+            Annotations per user
+          </p>
         </div>
       </section>
 
       <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <h2 className="text-lg mb-2">Annotations</h2>
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+          <h2 className="text-lg font-semibold mb-2 text-gray-800 dark:text-white">
+            Annotations
+          </h2>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={annotationsData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#274967" />
-              <XAxis dataKey="name" stroke="#000" />
-              <YAxis stroke="#000" />
-              <Tooltip />
+              <CartesianGrid strokeDasharray="3 3" stroke="#ccc" />
+              <XAxis dataKey="name" stroke="#666" />
+              <YAxis stroke="#666" />
+              <Tooltip contentStyle={{ backgroundColor: "#fff" }} />
               <Bar dataKey="value" fill="#3b82f6" />
             </BarChart>
           </ResponsiveContainer>
         </div>
-        <div>
-          <h2 className="text-lg mb-2">Errors</h2>
+
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+          <h2 className="text-lg font-semibold mb-2 text-gray-800 dark:text-white">
+            Errors
+          </h2>
           <ResponsiveContainer width="100%" height={200}>
             <LineChart data={errorsData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#274967" />
-              <XAxis dataKey="name" stroke="#000" />
-              <YAxis stroke="#000" />
-              <Tooltip />
-              <Line type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={2} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#ccc" />
+              <XAxis dataKey="name" stroke="#666" />
+              <YAxis stroke="#666" />
+              <Tooltip contentStyle={{ backgroundColor: "#fff" }} />
+              <Line
+                type="monotone"
+                dataKey="value"
+                stroke="#3b82f6"
+                strokeWidth={2}
+              />
             </LineChart>
           </ResponsiveContainer>
         </div>
       </section>
-
-      {/* <div className="flex justify-end">
-        <button className="bg-blue-600 hover:bg-blue-500 px-6 py-2 rounded text-white">
-          Submit
-        </button>
-      </div> */}
     </div>
   );
 }
