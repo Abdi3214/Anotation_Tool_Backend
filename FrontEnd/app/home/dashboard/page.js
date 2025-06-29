@@ -26,7 +26,7 @@ export default function Dashboard({ name }) {
   useEffect(() => {
     if (!token) return;
 
-    fetch("http://localhost:5000/api/annotation/stats", {
+    fetch("https://anotationtoolbackend-production.up.railway.app/api/annotation/stats", {
       headers: {
         Authorization: `Bearer ${token}`,
       },

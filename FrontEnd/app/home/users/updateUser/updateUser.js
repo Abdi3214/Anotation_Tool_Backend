@@ -37,7 +37,7 @@ export default function UpdateUser() {
 
     try {
       const res = await fetch(
-        `http://localhost:5000/api/users/UpdateUsers/${id}`,
+        `https://anotationtoolbackend-production.up.railway.app/api/users/UpdateUsers/${id}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },

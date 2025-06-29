@@ -19,7 +19,7 @@ export default function ExportData() {
   const handleDownload = async () => {
     const query = `?start=${encodeURIComponent(startDate)}&end=${encodeURIComponent(endDate)}&format=${format.toLowerCase()}`;
     try {
-      const res = await fetch(`http://localhost:5000/api/annotation/export${query}`, {
+      const res = await fetch(`https://anotationtoolbackend-production.up.railway.app/api/annotation/export${query}`, {
         method: 'GET'
       });
       if (!res.ok) throw new Error(`Export failed: ${res.status} ${res.statusText} `);

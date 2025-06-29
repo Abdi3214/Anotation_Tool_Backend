@@ -33,7 +33,7 @@ export default function Users() {
   const fetchUsers = async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:5000/api/users/usersAll", {
+      const res = await fetch("https://anotationtoolbackend-production.up.railway.app/api/users/usersAll", {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -74,7 +74,7 @@ export default function Users() {
   }, [users]);
   const handleDelete = async (id) => {
     try{
-      const res = await fetch(`http://localhost:5000/api/users/deleteUser/${id}`, {
+      const res = await fetch(`https://anotationtoolbackend-production.up.railway.app/api/users/deleteUser/${id}`, {
         method: "DELETE"
       })
       if (!res.ok) {

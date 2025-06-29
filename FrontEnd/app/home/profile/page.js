@@ -18,7 +18,7 @@ export default function Profile() {
 
       try {
         const res = await fetch(
-          "http://localhost:5000/api/annotation/pending",
+          "https://anotationtoolbackend-production.up.railway.app/api/annotation/pending",
           {
             headers: { Authorization: `Bearer ${token}` },
           }
@@ -45,7 +45,7 @@ export default function Profile() {
 
       try {
         const res = await fetch(
-          "http://localhost:5000/api/annotation/Allannotation",
+          "https://anotationtoolbackend-production.up.railway.app/api/annotation/Allannotation",
           {
             headers: { Authorization: `Bearer ${token}` },
           }

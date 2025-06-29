@@ -61,7 +61,7 @@ const Annotation = () => {
   // const fetchSaved = async () => {
   //   try {
   //     const res = await fetch(
-  //       "http://localhost:5000/api/annotation/Addannotation"
+  //       "https://anotationtoolbackend-production.up.railway.app/api/annotation/Addannotation"
   //     );
   //     const saved = await res.json();
   //     // assume each saved annotation has an Annotator_ID field
@@ -75,7 +75,7 @@ const Annotation = () => {
     const fetchSaved = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await fetch("http://localhost:5000/api/annotation/Allannotation", {
+        const res = await fetch(`https://anotationtoolbackend-production.up.railway.app/api/annotation/Allannotation`, {
           headers: {
             Authorization: `Bearer ${token}`
           }
@@ -99,7 +99,7 @@ const Annotation = () => {
   useEffect(() => {
     const fetchItems = async () => {
       try {
-        const res = await fetch("http://localhost:5000/api/data/annotation");
+        const res = await fetch("https://anotationtoolbackend-production.up.railway.app/api/data/annotation");
         if (!res.ok) throw new Error("Network response was not ok");
         const data = await res.json();
         const mapped = data.map((post) => ({
@@ -121,7 +121,7 @@ const Annotation = () => {
     const fetchProgress = async () => {
       const token = localStorage.getItem("token");
       try {
-        const res = await fetch("http://localhost:5000/api/progress", {
+        const res = await fetch("https://anotationtoolbackend-production.up.railway.app/api/progress", {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -203,7 +203,7 @@ const Annotation = () => {
       const token = localStorage.getItem("token");
   
       // 2) Save annotation to backend
-      const res = await fetch("http://localhost:5000/api/annotation/Addannotation", {
+      const res = await fetch("https://anotationtoolbackend-production.up.railway.app/api/annotation/Addannotation", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -238,7 +238,7 @@ const Annotation = () => {
         setCurrentIndex(next);
   
         // 7) Persist progress to backend
-        await fetch("http://localhost:5000/api/progress", {
+        await fetch("https://anotationtoolbackend-production.up.railway.app/api/progress", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

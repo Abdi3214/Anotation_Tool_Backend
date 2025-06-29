@@ -17,7 +17,7 @@ export default function SavedAnnotations() {
     }
 
     try {
-      const res = await fetch("http://localhost:5000/api/annotation/Allannotation", {
+      const res = await fetch("https://anotationtoolbackend-production.up.railway.app/api/annotation/Allannotation", {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -60,7 +60,7 @@ export default function SavedAnnotations() {
 
     const token = localStorage.getItem("token");
     try {
-      const res = await fetch("http://localhost:5000/api/annotation/deleteAll", {
+      const res = await fetch("https://anotationtoolbackend-production.up.railway.app/api/annotation/deleteAll", {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -85,7 +85,7 @@ export default function SavedAnnotations() {
 
     const token = localStorage.getItem("token");
     try {
-      const res = await fetch(`http://localhost:5000/api/annotation/rebortAnnotationDelete/${id}`, {
+      const res = await fetch(`https://anotationtoolbackend-production.up.railway.app/api/annotation/rebortAnnotationDelete/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
