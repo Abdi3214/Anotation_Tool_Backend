@@ -16,7 +16,8 @@ export default function Login() {
     e.preventDefault();
     try {
       const res = await axios.post(
-        "http://localhost:5000/api/users/login",
+        `${process.env.next_public_url}api/users/login`,
+        
         form
       );
       localStorage.setItem("token", res.data.token);
