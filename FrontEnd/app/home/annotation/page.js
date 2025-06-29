@@ -349,6 +349,85 @@ const Annotation = () => {
   };
   
   
+  // const handleSelection = (setSelections, text, category = null, ref = null) => {
+  //   try {
+  //     const selection = window.getSelection();
+  //     if (!selection || selection.rangeCount === 0) return;
+  
+  //     const selectedText = selection.toString().trim();
+  //     if (!selectedText || !ref?.current?.textContent?.includes(selectedText)) {
+  //       selection.removeAllRanges();
+  //       return;
+  //     }
+  
+  //     const range = selection.getRangeAt(0);
+  //     const preRange = document.createRange();
+  //     preRange.selectNodeContents(ref.current);
+  //     preRange.setEnd(range.startContainer, range.startOffset);
+  //     const start = preRange.toString().length;
+  //     const end = start + selectedText.length;
+  
+  //     if (start === -1 || end > text.length) {
+  //       selection.removeAllRanges();
+  //       return;
+  //     }
+  
+  //     if (setSelections === setTargetSelections) {
+  //       setPendingTargetText(selectedText);
+  //       setShowCategoryOptions(true);
+  //       const rect = range.getBoundingClientRect();
+  //       setSelectionPosition({
+  //         top: rect.bottom + window.scrollY + 10,
+  //         left: rect.left + window.scrollX,
+  //       });
+  //       selection.removeAllRanges();
+  //       return;
+  //     }
+  
+  //     setSelections((prev) => {
+  //       // 🟢 Deselect Mistranslation in source and remove from target
+  //       const isMistranslation = category === "Mistranslation";
+  //       const matchIndex = prev.findIndex(
+  //         (s) =>
+  //           s.start === start &&
+  //           s.end === end &&
+  //           s.text === selectedText &&
+  //           s.category === category
+  //       );
+  
+  //       if (matchIndex !== -1) {
+  //         // If Mistranslation, remove its linked target as well
+  //         if (isMistranslation) {
+  //           const linkedTargetText = prev[matchIndex].linkedTargetText;
+  //           setTargetSelections((targetPrev) =>
+  //             targetPrev.filter(
+  //               (t) => t.text !== linkedTargetText || t.category !== "Mistranslation"
+  //             )
+  //           );
+  //         }
+  
+  //         // Deselect source
+  //         return prev.filter((_, i) => i !== matchIndex);
+  //       }
+  
+  //       const overlaps = prev.some(({ start: sStart, end: sEnd }) => {
+  //         return start < sEnd && end > sStart;
+  //       });
+  
+  //       if (overlaps) {
+  //         return prev;
+  //       }
+  
+  //       return [...prev, { text: selectedText, category, start, end }];
+  //     });
+  
+  //     selection.removeAllRanges();
+  //   } catch (err) {
+  //     console.error("Error during text selection:", err);
+  //     window.getSelection()?.removeAllRanges();
+  //   }
+  // };
+  
   const handleSelection = (setSelections, text, category = null, ref = null) => {
     try {
       const selection = window.getSelection();
@@ -372,35 +451,57 @@ const Annotation = () => {
         return;
       }
   
-      if (setSelections === setTargetSelections) {
-        setPendingTargetText(selectedText);
-        setShowCategoryOptions(true);
-        const rect = range.getBoundingClientRect();
-        setSelectionPosition({
-          top: rect.bottom + window.scrollY + 10,
-          left: rect.left + window.scrollX,
-        });
-        selection.removeAllRanges();
-        return;
-      }
+      const isSource = setSelections !== setTargetSelections;
+      const isMistranslation = category === "Mistranslation";
   
       setSelections((prev) => {
-        const alreadyExists = prev.some(
-          (s) => s.start === start && s.end === end && s.category === category
+        const matchIndex = prev.findIndex(
+          (s) => s.start === start && s.end === end && s.text === selectedText
         );
-        if (alreadyExists) {
-          // Deselect
-          return prev.filter((s) => !(s.start === start && s.end === end && s.category === category));
+  
+        if (matchIndex !== -1) {
+          const existing = prev[matchIndex];
+  
+          // 🟥 If same category, deselect
+          if (existing.category === category) {
+            if (isMistranslation && isSource) {
+              const linkedTargetText = existing.linkedTargetText;
+              setTargetSelections((prevT) =>
+                prevT.filter(
+                  (t) => !(t.text === linkedTargetText && t.category === "Mistranslation")
+                )
+              );
+            }
+            return prev.filter((_, i) => i !== matchIndex);
+          }
+  
+          // 🟨 If changing category from Mistranslation ➝ Omission
+          if (existing.category === "Mistranslation" && category !== "Mistranslation" && isSource) {
+            const linkedTargetText = existing.linkedTargetText;
+            setTargetSelections((prevT) =>
+              prevT.filter(
+                (t) => !(t.text === linkedTargetText && t.category === "Mistranslation")
+              )
+            );
+            // Remove old Mistranslation from source
+            const newPrev = prev.filter((_, i) => i !== matchIndex);
+            // Add new category
+            return [...newPrev, { text: selectedText, category, start, end }];
+          }
+  
+          // 🟨 If switching from Omission ➝ Mistranslation, handled in modal
+          if (existing.category !== category) {
+            // Remove old and add new
+            const newPrev = prev.filter((_, i) => i !== matchIndex);
+            return [...newPrev, { text: selectedText, category, start, end }];
+          }
         }
   
+        // ❌ Prevent overlap
         const overlaps = prev.some(({ start: sStart, end: sEnd }) => {
           return start < sEnd && end > sStart;
         });
-  
-        if (overlaps) {
-          // alert(`"${selectedText}" overlaps with an existing selection.`);
-          return prev;
-        }
+        if (overlaps) return prev;
   
         return [...prev, { text: selectedText, category, start, end }];
       });
@@ -412,128 +513,169 @@ const Annotation = () => {
     }
   };
   
+      
   
-    
-
-
-const handleCategoryConfirm = (cat) => {
-  if (!pendingTargetText) return;
-
-  const start = targetText.indexOf(pendingTargetText);
-  const end = start + pendingTargetText.length;
-
-  const overlaps = targetSelections.some(({ text, start: sStart, end: sEnd }) => {
-    return text !== pendingTargetText && !(end <= sStart || start >= sEnd);
-  });
-
-  if (overlaps) {
-    alert(`"${pendingTargetText}" overlaps with another selection.`);
+  
+  const handleCategoryConfirm = (cat) => {
+    if (!pendingTargetText) return;
+  
+    const start = targetText.indexOf(pendingTargetText);
+    const end = start + pendingTargetText.length;
+  
+    const overlaps = targetSelections.some(({ text, start: sStart, end: sEnd }) => {
+      return text !== pendingTargetText && !(end <= sStart || start >= sEnd);
+    });
+  
+    if (overlaps) {
+      alert(`"${pendingTargetText}" overlaps with another selection.`);
+      setPendingTargetText("");
+      setShowCategoryOptions(false);
+      return;
+    }
+  
+    const existingIndex = targetSelections.findIndex(s => s.text === pendingTargetText);
+    if (existingIndex !== -1) {
+      const existing = targetSelections[existingIndex];
+      if (existing.category === cat) {
+        setTargetSelections(prev => prev.filter((_, i) => i !== existingIndex));
+      } else if (cat === "Mistranslation") {
+        setTargetSelections(prev => prev.filter((_, i) => i !== existingIndex));
+        setIsModalOpen(true);
+        setCurrentMistranslation({ text: pendingTargetText, category: "Mistranslation", start, end });
+      } else {
+        const updated = [...targetSelections];
+        updated[existingIndex] = { text: pendingTargetText, category: cat, start, end };
+        setTargetSelections(updated);
+      }
+    } else {
+      if (cat === "Mistranslation") {
+        setIsModalOpen(true);
+        setCurrentMistranslation({ text: pendingTargetText, category: "Mistranslation", start, end });
+      } else {
+        setTargetSelections(prev => [
+          ...prev,
+          { text: pendingTargetText, category: cat, start, end }
+        ]);
+      }
+    }
+  
     setPendingTargetText("");
     setShowCategoryOptions(false);
-    return;
-  }
-
-  const existingIndex = targetSelections.findIndex(s => s.text === pendingTargetText);
-  if (existingIndex !== -1) {
-    const existing = targetSelections[existingIndex];
-    if (existing.category === cat) {
-      setTargetSelections(prev => prev.filter((_, i) => i !== existingIndex));
-    } else if (cat === "Mistranslation") {
-      setTargetSelections(prev => prev.filter((_, i) => i !== existingIndex));
-      setIsModalOpen(true);
-      setCurrentMistranslation({ text: pendingTargetText, category: "Mistranslation", start, end });
-    } else {
-      const updated = [...targetSelections];
-      updated[existingIndex] = { text: pendingTargetText, category: cat, start, end };
-      setTargetSelections(updated);
-    }
-  } else {
-    if (cat === "Mistranslation") {
-      setIsModalOpen(true);
-      setCurrentMistranslation({ text: pendingTargetText, category: "Mistranslation", start, end });
-    } else {
-      setTargetSelections(prev => [
-        ...prev,
-        { text: pendingTargetText, category: cat, start, end }
-      ]);
-    }
-  }
-
-  setPendingTargetText("");
-  setShowCategoryOptions(false);
-};
-
-
-const handleSourceSelection = () => {
-  const selection = window.getSelection();
-  const selectionText = selection.toString().trim();
-
-  if (
-    selectionText &&
-    sourceText.includes(selectionText) &&
-    currentMistranslation
-  ) {
-    const existingIndex = sourceSelections.findIndex((s) => s.text === selectionText);
-
-    // ✅ If already selected as source (Omission or other), remove it
-    if (existingIndex !== -1) {
-      const existing = sourceSelections[existingIndex];
-
-      // 🟠 If it's already Mistranslation, treat as deselect (remove both sides)
-      if (existing.category === "Mistranslation") {
-        const linkedTarget = existing.linkedTargetText;
-        setSourceSelections(prev => prev.filter((_, i) => i !== existingIndex));
-        setTargetSelections(prev => prev.filter(t => t.text !== linkedTarget || t.category !== "Mistranslation"));
+  };
+  
+  const handleSourceSelection = () => {
+    const selection = window.getSelection();
+    const selectionText = selection.toString().trim();
+  
+    if (
+      selectionText &&
+      sourceText.includes(selectionText) &&
+      currentMistranslation
+    ) {
+      const start = sourceText.indexOf(selectionText);
+      const end = start + selectionText.length;
+  
+      // 🔁 Deselect if Mistranslation already exists
+      const existingIndex = sourceSelections.findIndex(
+        (s) =>
+          s.category === "Mistranslation" &&
+          s.start === start &&
+          s.end === end &&
+          s.text === selectionText
+      );
+  
+      if (existingIndex !== -1) {
+        const linkedTarget = sourceSelections[existingIndex].linkedTargetText;
+        setSourceSelections((prev) =>
+          prev.filter((_, i) => i !== existingIndex)
+        );
+        setTargetSelections((prev) =>
+          prev.filter(
+            (t) =>
+              !(t.text === linkedTarget && t.category === "Mistranslation")
+          )
+        );
         resetModal();
         return;
       }
-
-      // 🔄 If it's Omission or any other, just remove it to allow re-assigning
-      setSourceSelections(prev => prev.filter((_, i) => i !== existingIndex));
-    }
-
-    // ✅ Prevent duplicate or overlapping mistranslation target
-    const targetAlreadyLinked = targetSelections.some(
-      (t) =>
-        t.category === "Mistranslation" &&
-        (t.text === currentMistranslation.text ||
-          t.text.includes(currentMistranslation.text) ||
-          currentMistranslation.text.includes(t.text))
-    );
-
-    if (targetAlreadyLinked) {
-      alert("This Mistranslation pair overlaps with an existing one.");
+  
+      // ❌ Remove overlapping Omission
+      setSourceSelections((prev) =>
+        prev.filter(
+          (s) =>
+            !(
+              s.category === "Omission" &&
+              !(end <= s.start || start >= s.end)
+            )
+        )
+      );
+  
+      // ❌ Remove any overlapping Mistranslation in source (for update case)
+      setSourceSelections((prev) =>
+        prev.filter(
+          (s) =>
+            !(
+              s.category === "Mistranslation" &&
+              !(end <= s.start || start >= s.end)
+            )
+        )
+      );
+  
+      // ✅ Remove related target Mistranslation if present
+      setTargetSelections((prev) =>
+        prev.filter(
+          (t) =>
+            !(
+              t.category === "Mistranslation" &&
+              (t.text === currentMistranslation.text ||
+                t.linkedSourceText === selectionText)
+            )
+        )
+      );
+  
+      // ❌ Prevent duplicate target side
+      const targetAlreadyLinked = targetSelections.some(
+        (t) =>
+          t.category === "Mistranslation" &&
+          (t.text === currentMistranslation.text ||
+            t.text.includes(currentMistranslation.text) ||
+            currentMistranslation.text.includes(t.text))
+      );
+  
+      if (targetAlreadyLinked) {
+        alert("This Mistranslation pair overlaps with an existing one.");
+        resetModal();
+        return;
+      }
+  
+      // ✅ Add new Mistranslation pair
+      setSourceSelections((prev) => [
+        ...prev,
+        {
+          text: selectionText,
+          category: "Mistranslation",
+          linkedTargetText: currentMistranslation.text,
+          start,
+          end,
+        },
+      ]);
+  
+      setTargetSelections((prev) => [
+        ...prev,
+        {
+          text: currentMistranslation.text,
+          category: "Mistranslation",
+          linkedSourceText: selectionText,
+          start: currentMistranslation.start,
+          end: currentMistranslation.end,
+        },
+      ]);
+  
       resetModal();
-      return;
     }
-
-    // ✅ Add new mistranslation pair
-    setSourceSelections((prev) => [
-      ...prev,
-      {
-        text: selectionText,
-        category: "Mistranslation",
-        linkedTargetText: currentMistranslation.text,
-      },
-    ]);
-
-    setTargetSelections((prev) => [
-      ...prev,
-      {
-        text: currentMistranslation.text,
-        category: "Mistranslation",
-        linkedSourceText: selectionText,
-        start: currentMistranslation.start,
-        end: currentMistranslation.end,
-      },
-    ]);
-
-    resetModal();
-  }
-
-  selection.removeAllRanges();
-};
-
+  
+    selection.removeAllRanges();
+  };
 
 
 const getClassAndTooltip = (sel) => {
