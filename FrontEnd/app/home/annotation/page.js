@@ -451,57 +451,51 @@ const Annotation = () => {
         return;
       }
   
-      const isSource = setSelections !== setTargetSelections;
-      const isMistranslation = category === "Mistranslation";
+      if (setSelections === setTargetSelections) {
+        setPendingTargetText(selectedText);
+        setShowCategoryOptions(true);
+        const rect = range.getBoundingClientRect();
+        setSelectionPosition({
+          top: rect.bottom + window.scrollY + 10,
+          left: rect.left + window.scrollX,
+        });
+        selection.removeAllRanges();
+        return;
+      }
   
       setSelections((prev) => {
+        // 🟢 Deselect Mistranslation in source and remove from target
+        const isMistranslation = category === "Mistranslation";
         const matchIndex = prev.findIndex(
-          (s) => s.start === start && s.end === end && s.text === selectedText
+          (s) =>
+            s.start === start &&
+            s.end === end &&
+            s.text === selectedText &&
+            s.category === category
         );
   
         if (matchIndex !== -1) {
-          const existing = prev[matchIndex];
-  
-          // 🟥 If same category, deselect
-          if (existing.category === category) {
-            if (isMistranslation && isSource) {
-              const linkedTargetText = existing.linkedTargetText;
-              setTargetSelections((prevT) =>
-                prevT.filter(
-                  (t) => !(t.text === linkedTargetText && t.category === "Mistranslation")
-                )
-              );
-            }
-            return prev.filter((_, i) => i !== matchIndex);
-          }
-  
-          // 🟨 If changing category from Mistranslation ➝ Omission
-          if (existing.category === "Mistranslation" && category !== "Mistranslation" && isSource) {
-            const linkedTargetText = existing.linkedTargetText;
-            setTargetSelections((prevT) =>
-              prevT.filter(
-                (t) => !(t.text === linkedTargetText && t.category === "Mistranslation")
+          // If Mistranslation, remove its linked target as well
+          if (isMistranslation) {
+            const linkedTargetText = prev[matchIndex].linkedTargetText;
+            setTargetSelections((targetPrev) =>
+              targetPrev.filter(
+                (t) => t.text !== linkedTargetText || t.category !== "Mistranslation"
               )
             );
-            // Remove old Mistranslation from source
-            const newPrev = prev.filter((_, i) => i !== matchIndex);
-            // Add new category
-            return [...newPrev, { text: selectedText, category, start, end }];
           }
   
-          // 🟨 If switching from Omission ➝ Mistranslation, handled in modal
-          if (existing.category !== category) {
-            // Remove old and add new
-            const newPrev = prev.filter((_, i) => i !== matchIndex);
-            return [...newPrev, { text: selectedText, category, start, end }];
-          }
+          // Deselect source
+          return prev.filter((_, i) => i !== matchIndex);
         }
   
-        // ❌ Prevent overlap
         const overlaps = prev.some(({ start: sStart, end: sEnd }) => {
           return start < sEnd && end > sStart;
         });
-        if (overlaps) return prev;
+  
+        if (overlaps) {
+          return prev;
+        }
   
         return [...prev, { text: selectedText, category, start, end }];
       });
