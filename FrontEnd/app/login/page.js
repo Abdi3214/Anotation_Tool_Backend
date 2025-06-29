@@ -16,7 +16,7 @@ export default function Login() {
     e.preventDefault();
     try {
       const res = await axios.post(
-        `${process.env.next_public_url}api/users/login`,
+        'https://anotationtoolbackend-production.up.railway.app/api/users/login',
         
         form
       );
