@@ -11,19 +11,22 @@ const SignUp = () => {
   const router = useRouter();
 
   const handleSubmit = async (e) => {
-    e.preventDefault(); // Prevent default form submit
+    e.preventDefault();
+  
     const data = {
       name,
       email,
       password
     };
+  
     try {
+      // Step 1: Register the user
       const res = await fetch("https://anotationtoolbackend-production.up.railway.app/api/users/addUsers", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data)
       });
-
+  
       if (!res.ok) {
         const text = await res.text();
         if (res.status === 409) {
@@ -34,7 +37,8 @@ const SignUp = () => {
         }
         return;
       }
-      // 2️⃣ Login right after registering
+  
+      // Step 2: Login right after registering
       const loginRes = await fetch(
         'https://anotationtoolbackend-production.up.railway.app/api/users/login',
         {
@@ -43,25 +47,37 @@ const SignUp = () => {
           body: JSON.stringify({ email, password })
         }
       );
-
+  
       if (!loginRes.ok) {
         const err = await loginRes.json();
         throw new Error(err.error || 'Login after register failed');
       }
-
-      const { token } = await loginRes.json();
-
-      
+  
+      // Step 3: Save token and user role
+      const { token, user } = await loginRes.json();
+  
       localStorage.setItem('token', token);
-      const result = await res.json();
-      router.push(`/home/dashboard?name=${encodeURIComponent(name)}`);
-      console.log("Saved user:", result);
+      localStorage.setItem('user', JSON.stringify(user)); // save user role
 
+      console.log(user.userType)
+      // Step 4: Conditional redirect
+      if (user.userType === 'Admin') {
+        router.push(`/home/dashboard?name=${encodeURIComponent(name)}`);
+      } else if (user.userType === 'annotator') {
+        router.push("/home/annotation");
+      } else {
+        alert("Unknown user role.");
+      }
+  
+      const result = await res.json();
+      console.log("Saved user:", result);
+  
     } catch (err) {
       console.error("Unexpected error:", err);
       alert("Something went wrong.");
     }
   };
+  
 
   return (
     <div className="flex justify-center items-center min-h-screen bg-gray-50 dark:bg-[#0a0a0a] px-4">

@@ -139,36 +139,48 @@ export default function Users() {
         {loading ? (
           <TableSkeleton rows={10} />
         ) : (
-          <table className="min-w-full text-sm text-left">
+          <table className="min-w-full text-sm text-left table-auto">
             <thead className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
               <tr>
-                <th className="px-4 py-3">ID</th>
-                <th className="px-4 py-3">Name</th>
-                <th className="px-4 py-3">Email</th>
-                <th className="px-4 py-3">Type</th>
-                <th className="px-4 py-3">Edit</th>
-                <th className="px-4 py-3">Delete</th>
+                <th scope="col" className="px-4 py-3 whitespace-nowrap">
+                  ID
+                </th>
+                <th scope="col" className="px-4 py-3 whitespace-nowrap">
+                  Name
+                </th>
+                <th scope="col" className="px-4 py-3 whitespace-nowrap">
+                  Email
+                </th>
+                <th scope="col" className="px-4 py-3 whitespace-nowrap">
+                  Type
+                </th>
+                <th scope="col" className="px-4 py-3 whitespace-nowrap">
+                  Edit
+                </th>
+                <th scope="col" className="px-4 py-3 whitespace-nowrap">
+                  Delete
+                </th>
               </tr>
             </thead>
             <tbody>
               {users.map((user) => (
                 <tr
-                  key={user.id}
+                  key={user._id}
                   className="border-t border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
                 >
-                  <td className="px-4 py-3 text-gray-700 dark:text-gray-200">
-                    {user.id}
+                  <td className="px-4 py-3 text-gray-700 dark:text-gray-200 whitespace-nowrap">
+                    {user.id || user._id}
                   </td>
-                  <td className="px-4 py-3 text-gray-700 dark:text-gray-200">
+                  <td className="px-4 py-3 text-gray-700 dark:text-gray-200 whitespace-nowrap">
                     {user.name}
                   </td>
-                  <td className="px-4 py-3 text-gray-700 dark:text-gray-200">
+                  <td className="px-4 py-3 text-gray-700 dark:text-gray-200 break-words max-w-xs">
                     {user.email}
                   </td>
-                  <td className="px-4 py-3 capitalize text-gray-700 dark:text-gray-200">
+                  <td className="px-4 py-3 capitalize text-gray-700 dark:text-gray-200 whitespace-nowrap">
                     {user.type}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3 whitespace-nowrap">
                     <Link
                       href={{
                         pathname: "./users/updateUser",
@@ -181,18 +193,18 @@ export default function Users() {
                         },
                       }}
                       className="inline-flex items-center text-blue-600 dark:text-blue-400 hover:underline"
+                      aria-label={`Edit user ${user.name}`}
                     >
-                      <Pencil className="cursor-pointer" size={18} />
+                      <Pencil size={18} />
                     </Link>
                   </td>
-                  <td className="px-4 py-3">
-                    <button onClick={() => handleDelete(user._id)}>
-                      <Trash
-                        className="cursor-pointer"
-                        size={20}
-                        color="#ef4444"
-                        title="Delete user"
-                      />
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <button
+                      onClick={() => handleDelete(user._id)}
+                      aria-label={`Delete user ${user.name}`}
+                      className="focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-red-500 rounded"
+                    >
+                      <Trash size={20} color="#ef4444" title="Delete user" />
                     </button>
                   </td>
                 </tr>
@@ -206,6 +218,7 @@ export default function Users() {
         <Link
           href="./users/addUser"
           className="inline-flex items-center gap-2 bg-rose-700 hover:bg-rose-600 text-white font-medium px-4 py-2 rounded-md transition"
+          aria-label="Add User"
         >
           <UserRoundPlus size={18} /> Add User
         </Link>

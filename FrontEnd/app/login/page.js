@@ -26,7 +26,7 @@ export default function Login() {
       if (res.data.user.userType === "Admin") {
         router.push("/home/dashboard");
       } else {
-        router.push("/");
+        router.push("/home/annotation");
       }
 
     
@@ -36,35 +36,40 @@ export default function Login() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
-      <div className="bg-white p-8 rounded-xl shadow-lg w-full max-w-sm">
-        <h2 className="text-2xl font-bold text-center mb-6">Login</h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <input
-            name="email"
-            type="email"
-            placeholder="Email"
-            onChange={handleChange}
-            required
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
-          />
-          <input
-            name="password"
-            type="password"
-            placeholder="Password"
-            onChange={handleChange}
-            required
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
-          />
-          <button
-            type="submit"
-            className="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition"
-          >
-            Login
-          </button>
-        </form>
-        {message && <p className="text-center text-red-500 mt-4">{message}</p>}
-      </div>
-    </div>
+    <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-[#0a0a0a] px-4">
+  <div className="bg-white dark:bg-gray-900 p-8 rounded-xl shadow-lg w-full max-w-sm">
+    <h2 className="text-2xl font-bold text-center mb-6 text-gray-800 dark:text-white">Login</h2>
+    
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <input
+        name="email"
+        type="email"
+        placeholder="Email"
+        onChange={handleChange}
+        required
+        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
+      <input
+        name="password"
+        type="password"
+        placeholder="Password"
+        onChange={handleChange}
+        required
+        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
+      <button
+        type="submit"
+        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg transition"
+      >
+        Login
+      </button>
+    </form>
+
+    {message && (
+      <p className="text-center text-red-500 dark:text-red-400 mt-4">{message}</p>
+    )}
+  </div>
+</div>
+
   );
 }

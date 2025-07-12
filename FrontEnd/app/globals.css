@@ -24,3 +24,9 @@ body {
   color: var(--foreground); */
   font-family: Arial, Helvetica, sans-serif;
 }
+
+ /* Basic styles */
+body {
+  transition: background-color 0.3s, color 0.3s;
+}
+

@@ -8,7 +8,7 @@ export const UserProvider = ({ children }) => {
   const [completedAnnotations, setCompletedAnnotations] = useState(0);
   const [pendingReviews, setPendingReviews] = useState(0);
 
-  // Load user from localStorage on refresh
+  // Load user & theme from localStorage on refresh
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
@@ -20,12 +20,21 @@ export const UserProvider = ({ children }) => {
     }
   }, []);
 
+ 
   return (
-    <UserContext.Provider value={{ user, setUser, completedAnnotations, setCompletedAnnotations, pendingReviews, setPendingReviews }}>
+    <UserContext.Provider
+      value={{
+        user,
+        setUser,
+        completedAnnotations,
+        setCompletedAnnotations,
+        pendingReviews,
+        setPendingReviews
+      }}
+    >
       {children}
     </UserContext.Provider>
   );
 };
 
-// Hook for easier usage
 export const useStore = () => useContext(UserContext);
