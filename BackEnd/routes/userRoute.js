@@ -100,7 +100,31 @@ router.post("/login", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+router.post("/change-password", authenticateToken, async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
 
+  if (!currentPassword || !newPassword)
+    return res.status(400).json({ error: "All fields are required" });
+
+  try {
+    const user = await Users.findOne({ Annotator_ID: req.user.Annotator_ID });
+
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch)
+      return res.status(401).json({ error: "Current password is incorrect" });
+
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(newPassword, salt);
+    await user.save();
+
+    res.status(200).json({ message: "Password changed successfully" });
+  } catch (err) {
+    console.error("Change password error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
 
 // Update an users by ID
 router.put("/UpdateUsers/:id", async (req, res) => {

@@ -1,16 +1,18 @@
 // ====== routes/anotationRoute.js (Back‑End) ======
-const express = require('express');
+const express = require("express");
 
-const mongoose = require('mongoose');
-const Annotation = require('../models/annotationModel');
+const mongoose = require("mongoose");
+const Annotation = require("../models/annotationModel");
 const router = express.Router();
-const { Parser } = require('json2csv');
-const ExcelJS = require('exceljs');
-const { authenticateToken } = require('./auth');
-const User = require('../models/usersModel'); 
-router.get("/export", async (req, res) => {
+const { Parser } = require("json2csv");
+const ExcelJS = require("exceljs");
+const { authenticateToken } = require("./auth");
+const User = require("../models/usersModel");
+router.get("/export", authenticateToken, async (req, res) => {
   try {
     const { format = "csv" } = req.query;
+    
+    const Annotator_Email = req.user.email;
     const annotations = await Annotation.find();
 
     if (!annotations || annotations.length === 0) {
@@ -19,8 +21,19 @@ router.get("/export", async (req, res) => {
 
     if (format === "csv") {
       const fields = [
-        'Annotator_ID', 'Comment', 'Src_Text', 'Target_Text',
-        'Score', 'Omission', 'Addition', 'Mistranslation', 'Untranslation','Src_Issue', 'Target_Issue'
+        "Annotator_ID",
+        "Annotator_Email",
+        "Annotation_ID",
+        "Comment",
+        "Src_lang",
+        "Target_lang",
+        "Score",
+        "Omission",
+        "Addition",
+        "Mistranslation",
+        "Untranslation",
+        "Src_Issue",
+        "Target_Issue",
       ];
       const parser = new Parser({ fields });
       const csv = parser.parse(annotations);
@@ -33,26 +46,34 @@ router.get("/export", async (req, res) => {
     if (format === "xlsx") {
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet("Annotations");
-
       worksheet.columns = [
-        { header: 'Annotator_ID', key: 'Annotator_ID', width: 15 },
-        { header: 'user_ID', key: 'user_ID', width: 15 },
-        { header: 'Comment', key: 'Comment', width: 30 },
-        { header: 'Src_Text', key: 'Src_Text', width: 100 },
-        { header: 'Target_Text', key: 'Target_Text', width: 100 },
-        { header: 'Score', key: 'Score', width: 10 },
-        { header: 'Omission', key: 'Omission', width: 10 },
-        { header: 'Addition', key: 'Addition', width: 10 },
-        { header: 'Mistranslation', key: 'Mistranslation', width: 10 },
-        { header: 'Untranslation', key: 'Untranslation', width: 10 },
-        { header: 'Src_Issue', key: 'Src_Issue', width: 100 },
-        { header: 'Target_Issue', key: 'Target_Issue', width: 100 },
+        { header: "Annotator_ID", key: "Annotator_ID", width: 15 },
+        { header: "Annotator_Email", key: "Annotator_Email", width: 15 },
+        { header: "Annotation_ID", key: "Annotation_ID", width: 15 },
+        { header: "Comment", key: "Comment", width: 30 },
+        { header: "Src_lang", key: "Src_lang", width: 100 },
+        { header: "Target_lang", key: "Target_lang", width: 100 },
+        { header: "Score", key: "Score", width: 10 },
+        { header: "Omission", key: "Omission", width: 10 },
+        { header: "Addition", key: "Addition", width: 10 },
+        { header: "Mistranslation", key: "Mistranslation", width: 10 },
+        { header: "Untranslation", key: "Untranslation", width: 10 },
+        { header: "Src_Issue", key: "Src_Issue", width: 100 },
+        { header: "Target_Issue", key: "Target_Issue", width: 100 },
       ];
 
-      worksheet.addRows(annotations.map(a => a.toObject()));
+      worksheet.addRows(
+        annotations.map((a) => a.toObject(), Annotator_Email)
+      );
 
-      res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-      res.setHeader("Content-Disposition", "attachment; filename=annotations.xlsx");
+      res.setHeader(
+        "Content-Type",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      );
+      res.setHeader(
+        "Content-Disposition",
+        "attachment; filename=annotations.xlsx"
+      );
 
       await workbook.xlsx.write(res);
       return res.end();
@@ -71,20 +92,19 @@ router.get("/export", async (req, res) => {
   }
 });
 
-
 // Get all annotations
-router.get('/Allannotation', authenticateToken, async (req, res) => {
+router.get("/Allannotation", authenticateToken, async (req, res) => {
   try {
-    console.log('🧪 Decoded user:', req.user);  // <-- SEE what it contains
+    console.log("🧪 Decoded user:", req.user); // <-- SEE what it contains
     const userId = req.user.Annotator_ID || req.user.userId || req.user.id;
     const annotations = await Annotation.find({ Annotator_ID: userId });
     res.status(200).json(annotations);
   } catch (err) {
-    console.error('GET /Allannotation error:', err);
+    console.error("GET /Allannotation error:", err);
     res.status(500).json({ message: err.message });
   }
 });
-router.get('/pending', authenticateToken, async (req, res) => {
+router.get("/pending", authenticateToken, async (req, res) => {
   try {
     const annotatorId = req.user.Annotator_ID;
 
@@ -99,11 +119,13 @@ router.get('/pending', authenticateToken, async (req, res) => {
     res.status(500).json({ message: "Failed to get pending reviews" });
   }
 });
-router.get('/stats', authenticateToken, async (req, res) => {
+router.get("/stats", authenticateToken, async (req, res) => {
   try {
     const totalAnnotations = await Annotation.countDocuments();
     const userCount = await User.countDocuments();
-    const annotationsPerUser = userCount ? Math.round(totalAnnotations / userCount) : 0;
+    const annotationsPerUser = userCount
+      ? Math.round(totalAnnotations / userCount)
+      : 0;
 
     const last7Days = new Date();
     last7Days.setDate(last7Days.getDate() - 6);
@@ -117,7 +139,7 @@ router.get('/stats', authenticateToken, async (req, res) => {
       {
         $group: {
           _id: {
-            $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } // ✅ FIXED
+            $dateToString: { format: "%Y-%m-%d", date: "$createdAt" }, // ✅ FIXED
           },
           count: { $sum: 1 },
         },
@@ -135,14 +157,19 @@ router.get('/stats', authenticateToken, async (req, res) => {
         $project: {
           createdAt: 1,
           totalErrors: {
-            $add: ["$Omission", "$Addition", "$Mistranslation", "$Untranslation"]
+            $add: [
+              "$Omission",
+              "$Addition",
+              "$Mistranslation",
+              "$Untranslation",
+            ],
           },
         },
       },
       {
         $group: {
           _id: {
-            $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } // ✅ FIXED
+            $dateToString: { format: "%Y-%m-%d", date: "$createdAt" }, // ✅ FIXED
           },
           value: { $sum: "$totalErrors" },
         },
@@ -162,25 +189,25 @@ router.get('/stats', authenticateToken, async (req, res) => {
   }
 });
 
-router.get('/mycount', authenticateToken, async (req, res) => {
+router.get("/mycount", authenticateToken, async (req, res) => {
   try {
     const userId = req.user.Annotator_ID || req.user.userId || req.user.id;
     const total = await Annotation.countDocuments({ Annotator_ID: userId });
     res.status(200).json({ total });
   } catch (err) {
-    console.error('GET /mycount error:', err);
-    res.status(500).json({ message: 'Failed to count your annotations' });
+    console.error("GET /mycount error:", err);
+    res.status(500).json({ message: "Failed to count your annotations" });
   }
 });
 // Create a new annotation
 // routes/anotationRoute.js
 
-router.post('/Addannotation', authenticateToken, async (req, res) => {
+router.post("/Addannotation", authenticateToken, async (req, res) => {
   try {
     const {
       Comment,
-      Src_Text,
-      Target_Text,
+      Src_lang,
+      Target_lang,
       Score,
       Omission,
       Addition,
@@ -188,26 +215,29 @@ router.post('/Addannotation', authenticateToken, async (req, res) => {
       Untranslation,
       Src_Issue,
       Target_Issue,
+      Annotation_ID
     } = req.body;
 
-    const userId = req.user.Annotator_ID;     // From token
-    const userEmail = req.user.email;   // Include email in your JWT at login
+    const userId = req.user.Annotator_ID; // From token
+    const userEmail = req.user.email; // Include email in your JWT at login
 
     // Check for duplicates
     const existing = await Annotation.findOne({
       Annotator_ID: userId,
-      Src_Text: Src_Text,
+      Annotation_ID
     });
 
     if (existing) {
-      return res.status(409).json({ message: 'Annotation already exists for this text and user' });
+      return res
+        .status(409)
+        .json({ message: "Annotation already exists for this text and user" });
     }
 
     const newAnnotation = new Annotation({
       Annotator_ID: userId,
       Annotator_Email: userEmail,
-      Src_Text,
-      Target_Text,
+      Src_lang,
+      Target_lang,
       Comment,
       Score,
       Omission,
@@ -221,55 +251,63 @@ router.post('/Addannotation', authenticateToken, async (req, res) => {
     await newAnnotation.save();
     res.status(201).json(newAnnotation);
   } catch (err) {
-    console.error('POST /rebortAnnotation error:', err);
+    console.error("POST /rebortAnnotation error:", err);
     res.status(500).json({ message: err.message });
   }
 });
 
-  
 // Update an annotation by ID
-router.put('/rebortAnnotation/:id', async (req, res) => {
+router.put("/rebortAnnotation/:id", async (req, res) => {
   const id = req.params.id;
   if (!mongoose.Types.ObjectId.isValid(id)) {
-    return res.status(400).json({ message: 'Invalid annotation ID format' });
+    return res.status(400).json({ message: "Invalid annotation ID format" });
   }
 
   try {
-    const annotation = await Annotation.findByIdAndUpdate(id, req.body, { new: true });
-    if (!annotation) return res.status(404).json({ message: 'Annotation not found' });
+    const annotation = await Annotation.findByIdAndUpdate(id, req.body, {
+      new: true,
+    });
+    if (!annotation)
+      return res.status(404).json({ message: "Annotation not found" });
     res.status(200).json(annotation);
   } catch (err) {
-    console.error('PUT /rebortAnnotation/:id error:', err);
+    console.error("PUT /rebortAnnotation/:id error:", err);
     res.status(500).json({ message: err.message });
   }
 });
 
 // Delete an annotation by ID
-router.delete('/rebortAnnotationDelete/:id', authenticateToken, async (req, res) => {
-  try {
-    const annotation = await Annotation.findById(req.params.id);
+router.delete(
+  "/rebortAnnotationDelete/:id",
+  authenticateToken,
+  async (req, res) => {
+    try {
+      const annotation = await Annotation.findById(req.params.id);
 
-    if (!annotation) return res.status(404).json({ message: 'Annotation not found' });
+      if (!annotation)
+        return res.status(404).json({ message: "Annotation not found" });
 
-    // ✅ Optional: Ensure only owner can delete
-    if (annotation.Annotator_ID !== req.user.Annotator_ID) {
-      return res.status(403).json({ message: 'Unauthorized: Not your annotation' });
+      // ✅ Optional: Ensure only owner can delete
+      if (annotation.Annotator_ID !== req.user.Annotator_ID) {
+        return res
+          .status(403)
+          .json({ message: "Unauthorized: Not your annotation" });
+      }
+
+      const deleted = await Annotation.findByIdAndDelete(req.params.id);
+      res.status(200).json(deleted);
+    } catch (err) {
+      console.error("DELETE /rebortAnnotation/:id error:", err);
+      res.status(500).json({ message: err.message });
     }
-
-    const deleted = await Annotation.findByIdAndDelete(req.params.id);
-    res.status(200).json(deleted);
-  } catch (err) {
-    console.error('DELETE /rebortAnnotation/:id error:', err);
-    res.status(500).json({ message: err.message });
   }
-});
-
+);
 
 // DELETE all annotations
-router.delete('/deleteAll', async (req, res) => {
+router.delete("/deleteAll", async (req, res) => {
   try {
     await Annotation.deleteMany({});
-    res.status(200).json({ message: 'All annotations deleted' });
+    res.status(200).json({ message: "All annotations deleted" });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

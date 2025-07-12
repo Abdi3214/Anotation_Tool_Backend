@@ -1,13 +1,14 @@
 const mongoose = require('mongoose')
+delete mongoose.connection.models['Annotation']; 
 
 const annotationSchema = mongoose.Schema(
   {
     Annotator_ID: { type: Number, required: true }, 
     Annotator_Email: { type: String, required: true },
     Annotation_ID: { type: String, unique: true},
-    Comment: { type: String,  },
-    Src_Text: { type: String, required: true },
-    Target_Text: { type: String, required: true },
+    Comment: { type: String  },
+    Src_lang: { type: String, default: "English"},
+    Target_lang: { type: String, default: "Somali"},
     Score: { type: Number, required: true },
     Omission: { type: Number, default: 0  },
     Addition: { type: Number, default: 0  },
